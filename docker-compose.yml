@@ -1,0 +1,83 @@
+version: '3'
+services:
+  servidor1:
+    container_name: Servidor1
+    build: 
+     context: ./servidor1
+     dockerfile: Dockerfile
+    ports:
+      - 5001:5000
+    environment:
+      - MYSQL_HOST=maestro1
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_DB=db_informacion
+      - MYSQL_PORT=3306
+  
+  servidor2:
+    container_name: Servidor2
+    build: 
+     context: ./servidor2
+     dockerfile: Dockerfile
+    ports:
+      - 5002:5000
+    environment:
+      - MYSQL_HOST=maestro1
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_DB=db_informacion
+      - MYSQL_PORT=3306
+
+  servidor3:
+    container_name: Servidor3
+    build: 
+     context: ./servidor3
+     dockerfile: Dockerfile
+    ports:
+      - 5003:5000
+    environment:
+      - MYSQL_HOST=maestro1
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_DB=db_informacion
+      - MYSQL_PORT=3306
+  
+  phpmyadmin:
+    image: phpmyadmin:latest
+    environment:
+      PMA_HOSTS: "maestro1,esclavo"
+      PMA_ARBITRARY: 1
+    ports:
+      - 8081:80
+
+  maestro1:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db_informacion
+    ports:
+      - 3306:3306
+    command: --server-id=1 --log-bin=mysql-bin --binlog-do-db=db_informacion
+
+  esclavo:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db_informacion
+    ports:
+      - 3307:3306
+    command: --server-id=2 --log-bin=mysql-bin --binlog-do-db=db_informacion
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: balanceador
+    ports:
+      - 80:80
+    depends_on:
+      - servidor1
+      - servidor2
+      - servidor3
+
+
