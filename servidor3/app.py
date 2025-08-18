@@ -18,6 +18,7 @@ app.config['MYSQL_PASSWORD'] = os.getenv("********", "********")
 app.config['MYSQL_DB'] = os.getenv("********", "********")
 app.config['MYSQL_PORT'] = int(os.getenv("********", 3306))
 
+
 # Inicializar la base de datos
 mysql = MySQL(app)
 
@@ -73,6 +74,16 @@ def init_db():
                 ID_DEPARTAMENTOS INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
                 DEPARTAMENTO VARCHAR(100) NOT NULL,
                 DESCRIPCION VARCHAR(150) NOT NULL
+            )
+        """)
+
+        # Crear tabla de ubicaciones
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS ubicaciones (
+                ID_UBICACIONES INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+                DESCRIPCION VARCHAR(150) NOT NULL,
+                GEOLOCALIZACION VARCHAR(100) NOT NULL,
+                DIRECCION VARCHAR(100) NOT NULL
             )
         """)
         
