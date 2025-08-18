@@ -12,11 +12,11 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "tu_clave_secreta_aqui")
 
 # Configuración de la base de datos MySQL
-app.config['MYSQL_HOST'] = os.getenv("MYSQL_HOST", "maestro1")
-app.config['MYSQL_USER'] = os.getenv("MYSQL_USER", "root")
-app.config['MYSQL_PASSWORD'] = os.getenv("MYSQL_PASSWORD", "root")
-app.config['MYSQL_DB'] = os.getenv("MYSQL_DB", "db_informacion")
-app.config['MYSQL_PORT'] = int(os.getenv("MYSQL_PORT", 3306))
+app.config['MYSQL_HOST'] = os.getenv("*********", "**********")
+app.config['MYSQL_USER'] = os.getenv("********", "********")
+app.config['MYSQL_PASSWORD'] = os.getenv("********", "********")
+app.config['MYSQL_DB'] = os.getenv("********", "********")
+app.config['MYSQL_PORT'] = int(os.getenv("********", 3306))
 
 # Inicializar la base de datos
 mysql = MySQL(app)
