@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f2f6fa;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 4px 24px rgba(13, 59, 78, 0.08);
+            background: #fff;
+        }
+        .card-header {
+            background: #0d3b4e;
+            color: #fff;
+            border-bottom: none;
+        }
+        .form-label {
+            color: #0d3b4e;
+            font-weight: 500;
+        }
+        .form-control:focus {
+            border-color: #0d3b4e;
+            box-shadow: 0 0 0 0.2rem rgba(13, 59, 78, 0.15);
+        }
+        .btn-primary {
+            background: #0d3b4e;
+            border: none;
+        }
+        .btn-primary:hover, .btn-primary:focus {
+            background: #14506b;
+        }
+        .btn-outline-secondary {
+            border-color: #0d3b4e;
+            color: #0d3b4e;
+        }
+        .btn-outline-secondary:hover, .btn-outline-secondary:focus {
+            background: #0d3b4e;
+            color: #fff;
+        }
+        .btn-close {
+            filter: invert(1);
+        }
+        .alert-success {
+            background: #eafaf1;
+            color: #14506b;
+            border-color: #b6e2d3;
+        }
+        .alert-danger {
+            background: #fff0f0;
+            color: #b71c1c;
+            border-color: #f5c6cb;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: #0d3b4e;
+            border: none;
+        }
+        .btn-warning:hover, .btn-warning:focus {
+            background: #ffda6a;
+            color: #0d3b4e;
+        }
+        .card {
+            border-radius: 16px;
+        }
+        .input-group-text {
+            background: #f2f6fa;
+            color: #0d3b4e;
+            border: none;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container">
+        <div class="row justify-content-center mt-5">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-center">Iniciar Sesión</h3>
+                    </div>
+                    <div class="card-body">
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
+                        <form method="POST">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Usuario</label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Contraseña</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword" tabindex="-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
+                                            <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.133 13.133 0 0 1 1.172 8z"/>
+                                            <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm0 1a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Iniciar Sesión</button>
+                        </form>
+                        
+                        <div class="text-center mt-3">
+                            <p>¿No tienes una cuenta? <a href="{{ url_for('register') }}">Regístrate aquí</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
+        togglePassword.addEventListener('click', function () {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.innerHTML = type === 'password'
+                ? `<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='currentColor' class='bi bi-eye' viewBox='0 0 16 16'><path d='M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.133 13.133 0 0 1 1.172 8z'/><path d='M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm0 1a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z'/></svg>`
+                : `<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='currentColor' class='bi bi-eye-slash' viewBox='0 0 16 16'><path d='M13.359 11.238C12.06 12.226 10.21 13.5 8 13.5c-2.12 0-3.879-1.168-5.168-2.457A13.133 13.133 0 0 1 1.172 8c.058-.087.122-.183.195-.288.335-.48.83-1.12 1.465-1.755C4.121 4.668 5.881 3.5 8 3.5c1.13 0 2.19.312 3.141.857l.718-.718a.5.5 0 1 1 .708.708l-10 10a.5.5 0 0 1-.708-.708l1.06-1.06z'/><path d='M8 5.5a2.5 2.5 0 0 0-2.45 2.995l3.945 3.945A2.5 2.5 0 0 0 8 5.5z'/></svg>`;
+        });
+    </script>
+</body>
+</html>

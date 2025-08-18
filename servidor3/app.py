@@ -1,3 +1,4 @@
+
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_mysqldb import MySQL
 import bcrypt
@@ -56,19 +57,22 @@ def init_db():
             )
         """)
         
-        # Crear tabla de productos
+        # Crear tabla de áreas
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS productos (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                codigo VARCHAR(50) UNIQUE NOT NULL,
-                nombre VARCHAR(100) NOT NULL,
-                descripcion TEXT,
-                unidad VARCHAR(20) NOT NULL,
-                categoria VARCHAR(50) NOT NULL,
-                stock INT DEFAULT 0,
-                precio DECIMAL(10,2) DEFAULT 0.00,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            CREATE TABLE IF NOT EXISTS areas (
+                ID_AREAS INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                AREA VARCHAR(100) NOT NULL,
+                DESCRIPCION VARCHAR(150) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Crear tabla de departamentos
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS departamentos (
+                ID_DEPARTAMENTOS INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+                DEPARTAMENTO VARCHAR(100) NOT NULL,
+                DESCRIPCION VARCHAR(150) NOT NULL
             )
         """)
         
@@ -81,7 +85,7 @@ def index():
         return redirect(url_for('login'))
     
     servidor_info = "Servidor 3"
-    return render_template('index.html', servidor_info=servidor_info)
+    return render_template('Areas/index.html', servidor_info=servidor_info)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -91,7 +95,7 @@ def login():
         
         if not username or not password:
             flash('Por favor, complete todos los campos', 'error')
-            return render_template('login.html')
+            return render_template('Login/login.html')
         
         cur = mysql.connection.cursor()
         cur.execute("SELECT id, username, password_hash FROM usuarios WHERE username = %s", (username,))
@@ -102,11 +106,23 @@ def login():
             session['user_id'] = user[0]
             session['username'] = user[1]
             flash('Inicio de sesión exitoso', 'success')
-            return redirect(url_for('index'))
+            return redirect(url_for('menu'))
         else:
             flash('Usuario o contraseña incorrectos', 'error')
-    
-    return render_template('login.html')
+    return render_template('Login/login.html')
+
+@app.route('/menu')
+def menu():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('menu.html')
+
+@app.route('/areas')
+def areas():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    servidor_info = "Servidor 3"
+    return render_template('Areas/index.html', servidor_info=servidor_info)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -118,11 +134,11 @@ def register():
         
         if not all([username, email, password, confirm_password]):
             flash('Por favor, complete todos los campos', 'error')
-            return render_template('register.html')
+            return render_template('Login/register.html')
         
         if password != confirm_password:
             flash('Las contraseñas no coinciden', 'error')
-            return render_template('register.html')
+            return render_template('Login/register.html')
         
         # Verificar si el usuario ya existe
         cur = mysql.connection.cursor()
@@ -132,7 +148,7 @@ def register():
         if existing_user:
             flash('El usuario o email ya existe', 'error')
             cur.close()
-            return render_template('register.html')
+            return render_template('Login/register.html')
         
         # Crear hash de la contraseña
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -146,7 +162,7 @@ def register():
         flash('Usuario registrado exitosamente', 'success')
         return redirect(url_for('login'))
     
-    return render_template('register.html')
+    return render_template('Login/register.html')
 
 @app.route('/logout')
 def logout():
@@ -165,7 +181,7 @@ def productos():
     cur.close()
     
     servidor_info = "Servidor 3"
-    return render_template('productos.html', productos=productos, servidor_info=servidor_info)
+    return render_template('Areas/productos.html', productos=productos, servidor_info=servidor_info)
 
 @app.route('/agregar_producto', methods=['GET', 'POST'])
 def agregar_producto():
@@ -183,7 +199,7 @@ def agregar_producto():
         
         if not all([codigo, nombre, unidad, categoria]):
             flash('Por favor, complete todos los campos obligatorios', 'error')
-            return render_template('agregar_producto.html')
+            return render_template('Areas/agregar_producto.html')
         
         # Verificar si el código ya existe
         cur = mysql.connection.cursor()
@@ -207,38 +223,83 @@ def agregar_producto():
         return redirect(url_for('productos'))
     
     servidor_info = "Servidor 3"
-    return render_template('agregar_producto.html', servidor_info=servidor_info)
+    return render_template('Areas/agregar_producto.html', servidor_info=servidor_info)
 
-@app.route('/api/producto/<codigo>')
-def api_producto_disponibilidad(codigo):
-    """API para consultar disponibilidad de producto en tiempo real"""
+
+# API para consultar área por ID
+@app.route('/api/area/<int:id_area>')
+def api_area(id_area):
     if 'user_id' not in session:
         return jsonify({'error': 'No autorizado'}), 401
-    
     cur = mysql.connection.cursor()
-    cur.execute("SELECT codigo, nombre, stock, categoria FROM productos WHERE codigo = %s", (codigo,))
-    producto = cur.fetchone()
+    cur.execute("SELECT ID_AREAS, DESCRIPCION FROM areas WHERE ID_AREAS = %s", (id_area,))
+    area = cur.fetchone()
     cur.close()
-    
-    if producto:
+    if area:
         return jsonify({
-            'codigo': producto[0],
-            'nombre': producto[1],
-            'stock': producto[2],
-            'categoria': producto[3],
-            'disponible': producto[2] > 0,
+            'ID_AREAS': area[0],
+            'DESCRIPCION': area[1],
             'servidor': "Servidor 3"
         })
     else:
-        return jsonify({'error': 'Producto no encontrado'}), 404
+        return jsonify({'error': 'Área no encontrada'}), 404
 
+# Vista para consultar disponibilidad de áreas
 @app.route('/consultar_disponibilidad')
 def consultar_disponibilidad():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    
     servidor_info = "Servidor 3"
-    return render_template('consultar_disponibilidad.html', servidor_info=servidor_info)
+    # Obtener todas las áreas para mostrar en la vista
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT ID_AREAS, DESCRIPCION FROM areas ORDER BY DESCRIPCION")
+    areas = cur.fetchall()
+    cur.close()
+    return render_template('Areas/consultar_disponibilidad.html', servidor_info=servidor_info, areas=areas)
+
+
+# --------------------------------------CRUD de departamentos----------------------------------------------------------------------
+@app.route('/departamentos', methods=['GET', 'POST'])
+def departamentos():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    # Crear
+    if request.method == 'POST':
+        departamento = request.form.get('departamento')
+        descripcion = request.form.get('descripcion')
+        if departamento and descripcion:
+            cur.execute("INSERT INTO departamentos (DEPARTAMENTO, DESCRIPCION) VALUES (%s, %s)", (departamento, descripcion))
+            mysql.connection.commit()
+    # Leer
+    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO, DESCRIPCION FROM departamentos ORDER BY DEPARTAMENTO")
+    departamentos = cur.fetchall()
+    cur.close()
+    return render_template('Departamentos/CRUD_Departamentos.html', departamentos=departamentos)
+
+# Editar departamento
+@app.route('/departamentos/editar/<int:id>', methods=['POST'])
+def editar_departamento(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    departamento = request.form.get('departamento')
+    descripcion = request.form.get('descripcion')
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE departamentos SET DEPARTAMENTO = %s, DESCRIPCION = %s WHERE ID_DEPARTAMENTOS = %s", (departamento, descripcion, id))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('departamentos'))
+
+# Eliminar departamento
+@app.route('/departamentos/eliminar/<int:id>', methods=['POST'])
+def eliminar_departamento(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM departamentos WHERE ID_DEPARTAMENTOS = %s", (id,))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('departamentos'))
 
 if __name__ == "__main__":
     print("🚀 Iniciando servidor Flask...")
@@ -246,4 +307,3 @@ if __name__ == "__main__":
     init_db()
     print("✅ Servidor listo para recibir conexiones")
     app.run(host='0.0.0.0', debug=True)
-

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>CRUD Departamentos</title>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<style>
+		.table thead th {
+			background: #0d3b4e;
+			color: #fff;
+		}
+		.table tbody tr:nth-child(even) {
+			background: #f2f6fa;
+		}
+		.btn-action {
+			margin-right: 4px;
+		}
+		.search-box {
+			max-width: 300px;
+		}
+	</style>
+</head>
+<body>
+<div class="container mt-5">
+	<div class="d-flex justify-content-between align-items-center mb-3">
+		<a href="/menu" class="btn btn-secondary">&larr; Regresar al menú</a>
+		<select id="selectDepartamento" class="form-select w-50" onchange="filtrarPorSelect()">
+			<option value="">-- Todos los departamentos --</option>
+			{% set nombres_departamento = departamentos | map(attribute=1) | list %}
+			{% for nombre in nombres_departamento | unique %}
+				<option value="{{ nombre }}">{{ nombre }}</option>
+            "
+			{% endfor %}
+		</select>
+	</div>
+<!-- Modal para editar departamento -->
+<div class="modal fade" id="modalEditar" tabindex="-1" aria-labelledby="modalEditarLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<form id="formEditar" method="POST">
+				<div class="modal-header">
+					<h5 class="modal-title" id="modalEditarLabel">Editar Departamento</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<input type="hidden" name="id" id="editarId">
+					<div class="mb-3">
+						<label for="editarDepartamento" class="form-label">Departamento</label>
+						<input type="text" class="form-control" name="departamento" id="editarDepartamento" required>
+					</div>
+					<div class="mb-3">
+						<label for="editarDescripcion" class="form-label">Descripción</label>
+						<input type="text" class="form-control" name="descripcion" id="editarDescripcion" required>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+					<button type="submit" class="btn btn-primary">Guardar cambios</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- Modales reubicados para compatibilidad Bootstrap -->
+<!-- Modal para agregar departamento -->
+<div class="modal fade" id="modalAgregar" tabindex="-1" aria-labelledby="modalAgregarLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<form method="POST" action="{{ url_for('departamentos') }}">
+				<div class="modal-header">
+					<h5 class="modal-title" id="modalAgregarLabel">Agregar Departamento</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="mb-3">
+						<label for="nuevoDepartamento" class="form-label">Departamento</label>
+						<input type="text" class="form-control" name="departamento" id="nuevoDepartamento" required>
+					</div>
+					<div class="mb-3">
+						<label for="nuevaDescripcion" class="form-label">Descripción</label>
+						<input type="text" class="form-control" name="descripcion" id="nuevaDescripcion" required>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+					<button type="submit" class="btn btn-primary">Agregar</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- Modal para editar departamento -->
+<div class="modal fade" id="modalEditar" tabindex="-1" aria-labelledby="modalEditarLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<form id="formEditar" method="POST">
+				<div class="modal-header">
+					<h5 class="modal-title" id="modalEditarLabel">Editar Departamento</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<input type="hidden" name="id" id="editarId">
+					<div class="mb-3">
+						<label for="editarDepartamento" class="form-label">Departamento</label>
+						<input type="text" class="form-control" name="departamento" id="editarDepartamento" required>
+					</div>
+					<div class="mb-3">
+						<label for="editarDescripcion" class="form-label">Descripción</label>
+						<input type="text" class="form-control" name="descripcion" id="editarDescripcion" required>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+					<button type="submit" class="btn btn-primary">Guardar cambios</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+	<div class="d-flex justify-content-between align-items-center mb-3">
+	<h2>Departamentos</h2>
+	<button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalAgregar">+ Nuevo departamento</button>
+	</div>
+	<table class="table table-bordered" id="tablaDepartamentos">
+		<thead>
+			<tr>
+				<th>ID</th>
+				<th>Departamento</th>
+				<th>Descripción</th>
+				<th>Acciones</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for dep in departamentos %}
+			<tr>
+				<td>{{ dep[0] }}</td>
+				<td class="departamento-nombre">{{ dep[1] }}</td>
+				<td>{{ dep[2] }}</td>
+				<td>
+					<button type="button" class="btn btn-sm btn-primary btn-action" title="Editar" data-bs-toggle="modal" data-bs-target="#modalEditar"
+						data-id="{{ dep[0] }}" data-departamento="{{ dep[1]|e }}" data-descripcion="{{ dep[2]|e }}" onclick="llenarFormularioEditarDesdeBoton(this)">
+						<i class="bi bi-pencil"></i>
+					</button>
+					<form method="POST" action="{{ url_for('eliminar_departamento', id=dep[0]) }}" class="d-inline">
+						<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i class="bi bi-trash"></i></button>
+					</form>
+				</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+</div>
+<script>
+function llenarFormularioEditarDesdeBoton(btn) {
+	var id = btn.getAttribute('data-id');
+	var departamento = btn.getAttribute('data-departamento');
+	var descripcion = btn.getAttribute('data-descripcion');
+	document.getElementById('formEditar').action = '/departamentos/editar/' + id;
+	document.getElementById('editarId').value = id;
+	document.getElementById('editarDepartamento').value = departamento;
+	document.getElementById('editarDescripcion').value = descripcion;
+}
+function filtrarPorSelect() {
+	var select = document.getElementById('selectDepartamento');
+	var valor = select.value;
+	var tabla = document.getElementById('tablaDepartamentos');
+	var filas = tabla.getElementsByTagName('tr');
+	for (var i = 1; i < filas.length; i++) { // i=1 para saltar el encabezado
+		var celda = filas[i].getElementsByClassName('departamento-nombre')[0];
+		if (celda) {
+			if (valor === "" || celda.textContent.trim() === valor) {
+				filas[i].style.display = '';
+			} else {
+				filas[i].style.display = 'none';
+			}
+		}
+	}
+}
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
