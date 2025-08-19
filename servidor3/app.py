@@ -96,7 +96,7 @@ def index():
         return redirect(url_for('login'))
     
     servidor_info = "Servidor 3"
-    return render_template('Areas/index.html', servidor_info=servidor_info)
+    return render_template('Areas/CRUD_Areas.html', servidor_info=servidor_info)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -128,12 +128,6 @@ def menu():
         return redirect(url_for('login'))
     return render_template('menu.html')
 
-@app.route('/areas')
-def areas():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    servidor_info = "Servidor 3"
-    return render_template('Areas/index.html', servidor_info=servidor_info)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -181,95 +175,55 @@ def logout():
     flash('Sesión cerrada exitosamente', 'success')
     return redirect(url_for('login'))
 
-@app.route('/productos')
-def productos():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM productos ORDER BY nombre")
-    productos = cur.fetchall()
-    cur.close()
-    
-    servidor_info = "Servidor 3"
-    return render_template('Areas/productos.html', productos=productos, servidor_info=servidor_info)
 
-@app.route('/agregar_producto', methods=['GET', 'POST'])
-def agregar_producto():
+
+
+ # --------------------------------------CRUD de áreas----------------------------------------------------------------------
+@app.route('/crud_areas', methods=['GET', 'POST'])
+def crud_areas():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    
+    cur = mysql.connection.cursor()
+    # Crear
     if request.method == 'POST':
-        codigo = request.form.get('codigo')
-        nombre = request.form.get('nombre')
+        area = request.form.get('area')
         descripcion = request.form.get('descripcion')
-        unidad = request.form.get('unidad')
-        categoria = request.form.get('categoria')
-        stock = request.form.get('stock', 0)
-        precio = request.form.get('precio', 0.00)
-        
-        if not all([codigo, nombre, unidad, categoria]):
-            flash('Por favor, complete todos los campos obligatorios', 'error')
-            return render_template('Areas/agregar_producto.html')
-        
-        # Verificar si el código ya existe
-        cur = mysql.connection.cursor()
-        cur.execute("SELECT id FROM productos WHERE codigo = %s", (codigo,))
-        existing_product = cur.fetchone()
-        
-        if existing_product:
-            flash('El código de producto ya existe', 'error')
-            cur.close()
-            return render_template('agregar_producto.html')
-        
-        # Insertar nuevo producto
-        cur.execute("""
-            INSERT INTO productos (codigo, nombre, descripcion, unidad, categoria, stock, precio) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (codigo, nombre, descripcion, unidad, categoria, stock, precio))
-        mysql.connection.commit()
-        cur.close()
-        
-        flash('Producto agregado exitosamente', 'success')
-        return redirect(url_for('productos'))
-    
-    servidor_info = "Servidor 3"
-    return render_template('Areas/agregar_producto.html', servidor_info=servidor_info)
-
-
-# API para consultar área por ID
-@app.route('/api/area/<int:id_area>')
-def api_area(id_area):
-    if 'user_id' not in session:
-        return jsonify({'error': 'No autorizado'}), 401
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT ID_AREAS, DESCRIPCION FROM areas WHERE ID_AREAS = %s", (id_area,))
-    area = cur.fetchone()
-    cur.close()
-    if area:
-        return jsonify({
-            'ID_AREAS': area[0],
-            'DESCRIPCION': area[1],
-            'servidor': "Servidor 3"
-        })
-    else:
-        return jsonify({'error': 'Área no encontrada'}), 404
-
-# Vista para consultar disponibilidad de áreas
-@app.route('/consultar_disponibilidad')
-def consultar_disponibilidad():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    servidor_info = "Servidor 3"
-    # Obtener todas las áreas para mostrar en la vista
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT ID_AREAS, DESCRIPCION FROM areas ORDER BY DESCRIPCION")
+        if area and descripcion:
+            cur.execute("INSERT INTO areas (AREA, DESCRIPCION) VALUES (%s, %s)", (area, descripcion))
+            mysql.connection.commit()
+    # Leer
+    cur.execute("SELECT ID_AREAS, AREA, DESCRIPCION FROM areas ORDER BY AREA")
     areas = cur.fetchall()
     cur.close()
-    return render_template('Areas/consultar_disponibilidad.html', servidor_info=servidor_info, areas=areas)
+    return render_template('Areas/CRUD_Areas.html', areas=areas)
+
+# Editar área
+@app.route('/crud_areas/editar/<int:id>', methods=['POST'])
+def editar_area(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    area = request.form.get('area')
+    descripcion = request.form.get('descripcion')
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE areas SET AREA = %s, DESCRIPCION = %s WHERE ID_AREAS = %s", (area, descripcion, id))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('crud_areas'))
+
+# Eliminar área
+@app.route('/crud_areas/eliminar/<int:id>', methods=['POST'])
+def eliminar_area(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM areas WHERE ID_AREAS = %s", (id,))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('crud_areas'))
 
 
 # --------------------------------------CRUD de departamentos----------------------------------------------------------------------
+
 @app.route('/departamentos', methods=['GET', 'POST'])
 def departamentos():
     if 'user_id' not in session:
@@ -311,6 +265,53 @@ def eliminar_departamento(id):
     mysql.connection.commit()
     cur.close()
     return redirect(url_for('departamentos'))
+
+
+# --------------------------------------CRUD de ubicaciones----------------------------------------------------------------------
+@app.route('/ubicaciones', methods=['GET', 'POST'])
+def ubicaciones():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    # Crear
+    if request.method == 'POST':
+        descripcion = request.form.get('descripcion')
+        geolocalizacion = request.form.get('geolocalizacion')
+        direccion = request.form.get('direccion')
+        if descripcion and geolocalizacion and direccion:
+            cur.execute("INSERT INTO ubicaciones (DESCRIPCION, GEOLOCALIZACION, DIRECCION) VALUES (%s, %s, %s)", (descripcion, geolocalizacion, direccion))
+            mysql.connection.commit()
+    # Leer
+    cur.execute("SELECT ID_UBICACIONES, DESCRIPCION, GEOLOCALIZACION, DIRECCION FROM ubicaciones ORDER BY DESCRIPCION")
+    ubicaciones = cur.fetchall()
+    cur.close()
+    return render_template('Ubicaciones/CRUD_Ubicaciones.html', ubicaciones=ubicaciones)
+
+# Editar ubicacion
+@app.route('/ubicaciones/editar/<int:id>', methods=['POST'])
+def editar_ubicacion(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    descripcion = request.form.get('descripcion')
+    geolocalizacion = request.form.get('geolocalizacion')
+    direccion = request.form.get('direccion')
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE ubicaciones SET DESCRIPCION = %s, GEOLOCALIZACION = %s, DIRECCION = %s WHERE ID_UBICACIONES = %s", (descripcion, geolocalizacion, direccion, id))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('ubicaciones'))
+
+# Eliminar ubicacion
+@app.route('/ubicaciones/eliminar/<int:id>', methods=['POST'])
+def eliminar_ubicacion(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM ubicaciones WHERE ID_UBICACIONES = %s", (id,))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('ubicaciones'))
+
 
 if __name__ == "__main__":
     print("🚀 Iniciando servidor Flask...")
