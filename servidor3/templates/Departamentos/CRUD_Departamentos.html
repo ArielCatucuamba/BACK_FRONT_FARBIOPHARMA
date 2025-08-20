@@ -32,8 +32,8 @@
 
 		.table-fixed th:nth-child(3),
 		.table-fixed td:nth-child(3) {
-			min-width: 350px;
-			width: 350px;
+			min-width: 90px;
+			width: 90px;
 		}
 
 		.table-fixed th:nth-child(4),
@@ -104,11 +104,7 @@
 								<input type="text" class="form-control" name="departamento" id="editarDepartamento"
 									required>
 							</div>
-							<div class="mb-3">
-								<label for="editarDescripcion" class="form-label">Descripción</label>
-								<input type="text" class="form-control" name="descripcion" id="editarDescripcion"
-									required>
-							</div>
+							   <!-- Eliminado campo descripción -->
 						</div>
 						<div class="modal-footer">
 							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -134,11 +130,7 @@
 								<input type="text" class="form-control" name="departamento" id="nuevoDepartamento"
 									required>
 							</div>
-							<div class="mb-3">
-								<label for="nuevaDescripcion" class="form-label">Descripción</label>
-								<input type="text" class="form-control" name="descripcion" id="nuevaDescripcion"
-									required>
-							</div>
+							   <!-- Eliminado campo descripción -->
 						</div>
 						<div class="modal-footer">
 							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -186,45 +178,41 @@
 		<table class="table table-bordered table-fixed" id="tablaDepartamentos">
 			<thead>
 				<tr>
-					<th>ID</th>
-					<th>Departamento</th>
-					<th>Descripción</th>
-					<th>Acciones</th>
+					   <th>ID</th>
+					   <th>Departamento</th>
+					   <th>Acciones</th>
 				</tr>
 			</thead>
 			<tbody>
 				{% for dep in departamentos %}
-				<tr>
-					<td>{{ dep[0] }}</td>
-					<td class="departamento-nombre">{{ dep[1] }}</td>
-					<td>{{ dep[2] }}</td>
-					<td>
-						<button type="button" class="btn btn-sm btn-primary btn-action" title="Editar"
-							data-bs-toggle="modal" data-bs-target="#modalEditar" data-id="{{ dep[0] }}"
-							data-departamento="{{ dep[1]|e }}" data-descripcion="{{ dep[2]|e }}"
-							onclick="llenarFormularioEditarDesdeBoton(this)">
-							<i class="bi bi-pencil"></i>
-						</button>
-						<form method="POST" action="{{ url_for('eliminar_departamento', id=dep[0]) }}" class="d-inline">
-							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i
-									class="bi bi-trash"></i></button>
-						</form>
-					</td>
-				</tr>
+				   <tr>
+					   <td>{{ dep[0] }}</td>
+					   <td class="departamento-nombre">{{ dep[1] }}</td>
+					   <td>
+						   <button type="button" class="btn btn-sm btn-primary btn-action" title="Editar"
+							   data-bs-toggle="modal" data-bs-target="#modalEditar" data-id="{{ dep[0] }}"
+							   data-departamento="{{ dep[1]|e }}"
+							   onclick="llenarFormularioEditarDesdeBoton(this)">
+							   <i class="bi bi-pencil"></i>
+						   </button>
+						   <form method="POST" action="{{ url_for('eliminar_departamento', id=dep[0]) }}" class="d-inline">
+							   <button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i
+									   class="bi bi-trash"></i></button>
+						   </form>
+					   </td>
+				   </tr>
 				{% endfor %}
 			</tbody>
 		</table>
 	</div>
 	<script>
-		function llenarFormularioEditarDesdeBoton(btn) {
-			var id = btn.getAttribute('data-id');
-			var departamento = btn.getAttribute('data-departamento');
-			var descripcion = btn.getAttribute('data-descripcion');
-			document.getElementById('formEditar').action = '/departamentos/editar/' + id;
-			document.getElementById('editarId').value = id;
-			document.getElementById('editarDepartamento').value = departamento;
-			document.getElementById('editarDescripcion').value = descripcion;
-		}
+		   function llenarFormularioEditarDesdeBoton(btn) {
+			   var id = btn.getAttribute('data-id');
+			   var departamento = btn.getAttribute('data-departamento');
+			   document.getElementById('formEditar').action = '/departamentos/editar/' + id;
+			   document.getElementById('editarId').value = id;
+			   document.getElementById('editarDepartamento').value = departamento;
+		   }
 		function filtrarPorSelect() {
 			var select = document.getElementById('selectDepartamento');
 			var valor = select.value;

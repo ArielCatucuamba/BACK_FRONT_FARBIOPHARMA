@@ -63,7 +63,6 @@ def init_db():
             CREATE TABLE IF NOT EXISTS areas (
                 ID_AREAS INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                 AREA VARCHAR(100) NOT NULL,
-                DESCRIPCION VARCHAR(150) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -72,8 +71,7 @@ def init_db():
         cur.execute("""
             CREATE TABLE IF NOT EXISTS departamentos (
                 ID_DEPARTAMENTOS INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-                DEPARTAMENTO VARCHAR(100) NOT NULL,
-                DESCRIPCION VARCHAR(150) NOT NULL
+                DEPARTAMENTO VARCHAR(100) NOT NULL
             )
         """)
 
@@ -84,6 +82,41 @@ def init_db():
                 DESCRIPCION VARCHAR(150) NOT NULL,
                 GEOLOCALIZACION VARCHAR(100) NOT NULL,
                 DIRECCION VARCHAR(100) NOT NULL
+            )
+        """)
+
+        # Crear tabla de cargos relacionada con áreas y departamentos
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS cargos (
+                ID_CARGOS INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+                DESCRIPCION VARCHAR(150) NOT NULL,
+                AREA INT DEFAULT NULL,
+                DEPARTAMENTO INT DEFAULT NULL,
+                KEY AREA (AREA),
+                KEY DEPARTAMENTO (DEPARTAMENTO),
+                CONSTRAINT cargos_ibfk_1 FOREIGN KEY (AREA) REFERENCES areas (ID_AREAS),
+                CONSTRAINT cargos_ibfk_2 FOREIGN KEY (DEPARTAMENTO) REFERENCES departamentos (ID_DEPARTAMENTOS)
+            )
+        """)
+
+        # Crear tabla de colaboradores relacionada con áreas, departamentos, cargos y ubicaciones
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS colaboradores (
+                ID_COLABORADORES INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+                NOMBRES VARCHAR(100) NOT NULL,
+                APELLIDOS VARCHAR(100) NOT NULL,
+                DEPARTAMENTO INT DEFAULT NULL,
+                AREA INT DEFAULT NULL,
+                CARGO INT DEFAULT NULL,
+                UBICACION INT DEFAULT NULL,
+                KEY DEPARTAMENTO (DEPARTAMENTO),
+                KEY AREA (AREA),
+                KEY CARGO (CARGO),
+                KEY UBICACION (UBICACION),
+                CONSTRAINT colaboradores_ibfk_1 FOREIGN KEY (DEPARTAMENTO) REFERENCES departamentos (ID_DEPARTAMENTOS),
+                CONSTRAINT colaboradores_ibfk_2 FOREIGN KEY (AREA) REFERENCES areas (ID_AREAS),
+                CONSTRAINT colaboradores_ibfk_3 FOREIGN KEY (CARGO) REFERENCES cargos (ID_CARGOS),
+                CONSTRAINT colaboradores_ibfk_4 FOREIGN KEY (UBICACION) REFERENCES ubicaciones (ID_UBICACIONES)
             )
         """)
         
@@ -179,6 +212,7 @@ def logout():
 
 
  # --------------------------------------CRUD de áreas----------------------------------------------------------------------
+
 @app.route('/crud_areas', methods=['GET', 'POST'])
 def crud_areas():
     if 'user_id' not in session:
@@ -187,12 +221,11 @@ def crud_areas():
     # Crear
     if request.method == 'POST':
         area = request.form.get('area')
-        descripcion = request.form.get('descripcion')
-        if area and descripcion:
-            cur.execute("INSERT INTO areas (AREA, DESCRIPCION) VALUES (%s, %s)", (area, descripcion))
+        if area:
+            cur.execute("INSERT INTO areas (AREA) VALUES (%s)", (area,))
             mysql.connection.commit()
     # Leer
-    cur.execute("SELECT ID_AREAS, AREA, DESCRIPCION FROM areas ORDER BY AREA")
+    cur.execute("SELECT ID_AREAS, AREA FROM areas ORDER BY AREA")
     areas = cur.fetchall()
     cur.close()
     return render_template('Areas/CRUD_Areas.html', areas=areas)
@@ -203,9 +236,8 @@ def editar_area(id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     area = request.form.get('area')
-    descripcion = request.form.get('descripcion')
     cur = mysql.connection.cursor()
-    cur.execute("UPDATE areas SET AREA = %s, DESCRIPCION = %s WHERE ID_AREAS = %s", (area, descripcion, id))
+    cur.execute("UPDATE areas SET AREA = %s WHERE ID_AREAS = %s", (area, id))
     mysql.connection.commit()
     cur.close()
     return redirect(url_for('crud_areas'))
@@ -232,12 +264,11 @@ def departamentos():
     # Crear
     if request.method == 'POST':
         departamento = request.form.get('departamento')
-        descripcion = request.form.get('descripcion')
-        if departamento and descripcion:
-            cur.execute("INSERT INTO departamentos (DEPARTAMENTO, DESCRIPCION) VALUES (%s, %s)", (departamento, descripcion))
+        if departamento:
+            cur.execute("INSERT INTO departamentos (DEPARTAMENTO) VALUES (%s)", (departamento,))
             mysql.connection.commit()
     # Leer
-    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO, DESCRIPCION FROM departamentos ORDER BY DEPARTAMENTO")
+    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
     departamentos = cur.fetchall()
     cur.close()
     return render_template('Departamentos/CRUD_Departamentos.html', departamentos=departamentos)
@@ -248,9 +279,8 @@ def editar_departamento(id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     departamento = request.form.get('departamento')
-    descripcion = request.form.get('descripcion')
     cur = mysql.connection.cursor()
-    cur.execute("UPDATE departamentos SET DEPARTAMENTO = %s, DESCRIPCION = %s WHERE ID_DEPARTAMENTOS = %s", (departamento, descripcion, id))
+    cur.execute("UPDATE departamentos SET DEPARTAMENTO = %s WHERE ID_DEPARTAMENTOS = %s", (departamento, id))
     mysql.connection.commit()
     cur.close()
     return redirect(url_for('departamentos'))
@@ -312,6 +342,135 @@ def eliminar_ubicacion(id):
     cur.close()
     return redirect(url_for('ubicaciones'))
 
+
+# --------------------------------------CRUD de cargos----------------------------------------------------------------------
+@app.route('/crud_cargos', methods=['GET', 'POST'])
+def crud_cargos():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    # Obtener áreas y departamentos para los selects
+    cur.execute("SELECT ID_AREAS, AREA FROM areas ORDER BY AREA")
+    areas = cur.fetchall()
+    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
+    departamentos = cur.fetchall()
+    # Crear
+    if request.method == 'POST':
+        descripcion = request.form.get('descripcion')
+        area = request.form.get('area')
+        departamento = request.form.get('departamento')
+        if descripcion and area and departamento:
+            cur.execute("INSERT INTO cargos (DESCRIPCION, AREA, DEPARTAMENTO) VALUES (%s, %s, %s)", (descripcion, area, departamento))
+            mysql.connection.commit()
+    # Leer
+    cur.execute("""
+        SELECT c.ID_CARGOS, c.DESCRIPCION, a.AREA, d.DEPARTAMENTO, c.AREA, c.DEPARTAMENTO
+        FROM cargos c
+        LEFT JOIN areas a ON c.AREA = a.ID_AREAS
+        LEFT JOIN departamentos d ON c.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        ORDER BY c.DESCRIPCION
+    """)
+    cargos = cur.fetchall()
+    cur.close()
+    return render_template('Cargos/CRUD_Cargos.html', cargos=cargos, areas=areas, departamentos=departamentos)
+
+# Editar cargo
+@app.route('/crud_cargos/editar/<int:id>', methods=['POST'])
+def editar_cargo(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    descripcion = request.form.get('descripcion')
+    area = request.form.get('area')
+    departamento = request.form.get('departamento')
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE cargos SET DESCRIPCION = %s, AREA = %s, DEPARTAMENTO = %s WHERE ID_CARGOS = %s", (descripcion, area, departamento, id))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('crud_cargos'))
+
+# Eliminar cargo
+@app.route('/crud_cargos/eliminar/<int:id>', methods=['POST'])
+def eliminar_cargo(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM cargos WHERE ID_CARGOS = %s", (id,))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('crud_cargos'))
+
+
+# --------------------------------------CRUD de colaboradores----------------------------------------------------------------------
+@app.route('/crud_colaboradores', methods=['GET', 'POST'])
+def crud_colaboradores():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    # Obtener áreas, departamentos, cargos y ubicaciones para los selects
+    cur.execute("SELECT ID_AREAS, AREA FROM areas ORDER BY AREA")
+    areas = cur.fetchall()
+    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
+    departamentos = cur.fetchall()
+    cur.execute("SELECT ID_CARGOS, DESCRIPCION FROM cargos ORDER BY DESCRIPCION")
+    cargos = cur.fetchall()
+    cur.execute("SELECT ID_UBICACIONES, DESCRIPCION FROM ubicaciones ORDER BY DESCRIPCION")
+    ubicaciones = cur.fetchall()
+    # Crear
+    if request.method == 'POST':
+        nombres = request.form.get('nombres')
+        apellidos = request.form.get('apellidos')
+        departamento = request.form.get('departamento')
+        area = request.form.get('area')
+        cargo = request.form.get('cargo')
+        ubicacion = request.form.get('ubicacion')
+        if nombres and apellidos:
+            cur.execute("INSERT INTO colaboradores (NOMBRES, APELLIDOS, DEPARTAMENTO, AREA, CARGO, UBICACION) VALUES (%s, %s, %s, %s, %s, %s)",
+                        (nombres, apellidos, departamento, area, cargo, ubicacion))
+            mysql.connection.commit()
+    # Leer
+    cur.execute("""
+        SELECT col.ID_COLABORADORES, col.NOMBRES, col.APELLIDOS,
+               d.DEPARTAMENTO, a.AREA, c.DESCRIPCION, u.DESCRIPCION,
+               col.DEPARTAMENTO, col.AREA, col.CARGO, col.UBICACION
+        FROM colaboradores col
+        LEFT JOIN departamentos d ON col.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        LEFT JOIN areas a ON col.AREA = a.ID_AREAS
+        LEFT JOIN cargos c ON col.CARGO = c.ID_CARGOS
+        LEFT JOIN ubicaciones u ON col.UBICACION = u.ID_UBICACIONES
+        ORDER BY col.NOMBRES, col.APELLIDOS
+    """)
+    colaboradores = cur.fetchall()
+    cur.close()
+    return render_template('Colaboradores/CRUD_Colaboradores.html', colaboradores=colaboradores, areas=areas, departamentos=departamentos, cargos=cargos, ubicaciones=ubicaciones)
+
+# Editar colaborador
+@app.route('/crud_colaboradores/editar/<int:id>', methods=['POST'])
+def editar_colaborador(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    nombres = request.form.get('nombres')
+    apellidos = request.form.get('apellidos')
+    departamento = request.form.get('departamento')
+    area = request.form.get('area')
+    cargo = request.form.get('cargo')
+    ubicacion = request.form.get('ubicacion')
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE colaboradores SET NOMBRES = %s, APELLIDOS = %s, DEPARTAMENTO = %s, AREA = %s, CARGO = %s, UBICACION = %s WHERE ID_COLABORADORES = %s",
+                (nombres, apellidos, departamento, area, cargo, ubicacion, id))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('crud_colaboradores'))
+
+# Eliminar colaborador
+@app.route('/crud_colaboradores/eliminar/<int:id>', methods=['POST'])
+def eliminar_colaborador(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM colaboradores WHERE ID_COLABORADORES = %s", (id,))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('crud_colaboradores'))
 
 if __name__ == "__main__":
     print("🚀 Iniciando servidor Flask...")

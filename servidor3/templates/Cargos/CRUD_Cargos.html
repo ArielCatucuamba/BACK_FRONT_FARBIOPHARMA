@@ -18,23 +18,31 @@
 			word-break: break-word;
 		}
 
-		.table-fixed th:nth-child(1),
-		.table-fixed td:nth-child(1) {
-			min-width: 80px;
-			width: 80px;
-		}
-
-		.table-fixed th:nth-child(2),
-		.table-fixed td:nth-child(2) {
-			min-width: 200px;
-			width: 200px;
-		}
-
-		.table-fixed th:nth-child(3),
-		.table-fixed td:nth-child(3) {
-			min-width: 90px;
-			width: 90px;
-		}
+		   .table-fixed th:nth-child(1),
+		   .table-fixed td:nth-child(1) {
+			   min-width: 80px;
+			   width: 80px;
+		   }
+		   .table-fixed th:nth-child(2),
+		   .table-fixed td:nth-child(2) {
+			   min-width: 200px;
+			   width: 200px;
+		   }
+		   .table-fixed th:nth-child(3),
+		   .table-fixed td:nth-child(3) {
+			   min-width: 220px;
+			   width: 220px;
+		   }
+		   .table-fixed th:nth-child(4),
+		   .table-fixed td:nth-child(4) {
+			   min-width: 350px;
+			   width: 350px;
+		   }
+		   .table-fixed th:nth-child(5),
+		   .table-fixed td:nth-child(5) {
+			   min-width: 160px;
+			   width: 160px;
+		   }
 	</style>
 	<style>
 		.table thead th {
@@ -70,10 +78,10 @@
 	<div class="container mt-5">
 		<div class="d-flex justify-content-between align-items-center mb-3">
 			<a href="/menu" class="btn btn-secondary">&larr; Regresar al menú</a>
-			<div class="ms-3" style="min-width:350px; max-width:500px; width:100%;">
+			<div class="ms-3" style="min-width:250px;">
 				<select id="filtroArea" class="form-select" onchange="filtrarPorArea()">
 					<option value="">-- Todas las áreas --</option>
-					{% set nombres_area = areas | map(attribute=1) | list %}
+					{% set nombres_area = cargos | map(attribute=2) | list %}
 					{% for nombre in nombres_area | unique %}
 						<option value="{{ nombre }}">{{ nombre }}</option>
 					{% endfor %}
@@ -87,16 +95,33 @@
 				<div class="modal-content">
 					<form id="formEditar" method="POST">
 						<div class="modal-header">
-							<h5 class="modal-title" id="modalEditarLabel">Editar Área</h5>
+							<h5 class="modal-title" id="modalEditarLabel">Editar Cargo</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 						</div>
 						<div class="modal-body">
 							<input type="hidden" name="id" id="editarId">
 							<div class="mb-3">
-								<label for="editarArea" class="form-label">Área</label>
-								<input type="text" class="form-control" name="area" id="editarArea" required>
+								<label for="editarDescripcion" class="form-label">Descripción</label>
+								<input type="text" class="form-control" name="descripcion" id="editarDescripcion" required>
 							</div>
-							<!-- Eliminado campo Descripción -->
+							<div class="mb-3">
+								<label for="editarArea" class="form-label">Área</label>
+								<select class="form-select" name="area" id="editarArea" required>
+									<option value="">Seleccione un área</option>
+									{% for a in areas %}
+										<option value="{{ a[0] }}">{{ a[1] }}</option>
+									{% endfor %}
+								</select>
+							</div>
+							<div class="mb-3">
+								<label for="editarDepartamento" class="form-label">Departamento</label>
+								<select class="form-select" name="departamento" id="editarDepartamento" required>
+									<option value="">Seleccione un departamento</option>
+									{% for d in departamentos %}
+										<option value="{{ d[0] }}">{{ d[1] }}</option>
+									{% endfor %}
+								</select>
+							</div>
 						</div>
 						<div class="modal-footer">
 							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -111,17 +136,34 @@
 		<div class="modal fade" id="modalAgregar" tabindex="-1" aria-labelledby="modalAgregarLabel" aria-hidden="true">
 			<div class="modal-dialog">
 				<div class="modal-content">
-					<form method="POST" action="{{ url_for('crud_areas') }}">
+					<form method="POST" action="{{ url_for('crud_cargos') }}">
 						<div class="modal-header">
-							<h5 class="modal-title" id="modalAgregarLabel">Agregar Área</h5>
+							<h5 class="modal-title" id="modalAgregarLabel">Agregar Cargo</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 						</div>
 						<div class="modal-body">
 							<div class="mb-3">
-								<label for="nuevaArea" class="form-label">Área</label>
-								<input type="text" class="form-control" name="area" id="nuevaArea" required>
+								<label for="nuevaDescripcion" class="form-label">Descripción</label>
+								<input type="text" class="form-control" name="descripcion" id="nuevaDescripcion" required>
 							</div>
-							<!-- Eliminado campo Descripción -->
+							<div class="mb-3">
+								<label for="nuevaArea" class="form-label">Área</label>
+								<select class="form-select" name="area" id="nuevaArea" required>
+									<option value="">Seleccione un área</option>
+									{% for a in areas %}
+										<option value="{{ a[0] }}">{{ a[1] }}</option>
+									{% endfor %}
+								</select>
+							</div>
+							<div class="mb-3">
+								<label for="nuevoDepartamento" class="form-label">Departamento</label>
+								<select class="form-select" name="departamento" id="nuevoDepartamento" required>
+									<option value="">Seleccione un departamento</option>
+									{% for d in departamentos %}
+										<option value="{{ d[0] }}">{{ d[1] }}</option>
+									{% endfor %}
+								</select>
+							</div>
 						</div>
 						<div class="modal-footer">
 							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -162,30 +204,34 @@
 			</div>
 		</div>
 		<div class="d-flex justify-content-between align-items-center mb-3">
-			<h2>Gestión de Áreas</h2>
-			<button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalAgregar">+ Nueva área</button>
+			<h2>Gestión de Cargos</h2>
+			<button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalAgregar">+ Nuevo cargo</button>
 		</div>
-		<table class="table table-bordered table-fixed" id="tablaAreas">
+		<table class="table table-bordered table-fixed" id="tablaCargos">
 			<thead>
 				<tr>
 					<th>ID</th>
+					<th>Cargos</th>
 					<th>Área</th>
+					<th>Departamento</th>
 					<th>Acciones</th>
 				</tr>
 			</thead>
 			<tbody>
-				{% for area in areas %}
+				{% for cargo in cargos %}
 				<tr>
-					<td>{{ area[0] }}</td>
-					<td class="area-nombre">{{ area[1] }}</td>
+					<td>{{ cargo[0] }}</td>
+					<td class="cargo-descripcion">{{ cargo[1] }}</td>
+					<td class="cargo-area" data-area-id="{{ cargo[4] }}">{{ cargo[2] }}</td>
+					<td class="cargo-departamento" data-dep-id="{{ cargo[5] }}">{{ cargo[3] }}</td>
 					<td>
 						<button type="button" class="btn btn-sm btn-primary btn-action" title="Editar"
-							data-bs-toggle="modal" data-bs-target="#modalEditar" data-id="{{ area[0] }}"
-							data-area="{{ area[1]|e }}"
+							data-bs-toggle="modal" data-bs-target="#modalEditar" data-id="{{ cargo[0] }}"
+							data-descripcion="{{ cargo[1]|e }}" data-area-id="{{ cargo[4] }}" data-dep-id="{{ cargo[5] }}"
 							onclick="llenarFormularioEditarDesdeBoton(this)">
 							<i class="bi bi-pencil"></i>
 						</button>
-						<form method="POST" action="{{ url_for('eliminar_area', id=area[0]) }}" class="d-inline">
+						<form method="POST" action="{{ url_for('eliminar_cargo', id=cargo[0]) }}" class="d-inline">
 							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i
 									class="bi bi-trash"></i></button>
 						</form>
@@ -198,19 +244,23 @@
 	<script>
 		function llenarFormularioEditarDesdeBoton(btn) {
 			var id = btn.getAttribute('data-id');
-			var area = btn.getAttribute('data-area');
-			document.getElementById('formEditar').action = '/crud_areas/editar/' + id;
+			var descripcion = btn.getAttribute('data-descripcion');
+			var areaId = btn.getAttribute('data-area-id');
+			var depId = btn.getAttribute('data-dep-id');
+			document.getElementById('formEditar').action = '/crud_cargos/editar/' + id;
 			document.getElementById('editarId').value = id;
-			document.getElementById('editarArea').value = area;
+			document.getElementById('editarDescripcion').value = descripcion;
+			document.getElementById('editarArea').value = areaId;
+			document.getElementById('editarDepartamento').value = depId;
 		}
 
 		function filtrarPorArea() {
 			var select = document.getElementById('filtroArea');
 			var valor = select.value;
-			var tabla = document.getElementById('tablaAreas');
+			var tabla = document.getElementById('tablaCargos');
 			var filas = tabla.getElementsByTagName('tr');
 			for (var i = 1; i < filas.length; i++) { // i=1 para saltar el encabezado
-				var celda = filas[i].getElementsByClassName('area-nombre')[0];
+				var celda = filas[i].getElementsByClassName('cargo-area')[0];
 				if (celda) {
 					if (valor === "" || celda.textContent.trim() === valor) {
 						filas[i].style.display = '';
