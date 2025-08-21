@@ -1,4 +1,5 @@
 
+
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_mysqldb import MySQL
 import bcrypt
@@ -117,6 +118,21 @@ def init_db():
                 CONSTRAINT colaboradores_ibfk_2 FOREIGN KEY (AREA) REFERENCES areas (ID_AREAS),
                 CONSTRAINT colaboradores_ibfk_3 FOREIGN KEY (CARGO) REFERENCES cargos (ID_CARGOS),
                 CONSTRAINT colaboradores_ibfk_4 FOREIGN KEY (UBICACION) REFERENCES ubicaciones (ID_UBICACIONES)
+            )
+        """)
+
+        # Crear tabla de extensiones relacionada con áreas y departamentos
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS extensiones (
+                ID_EXTENSIONES INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+                NOMBRE VARCHAR(100) NOT NULL,
+                EXTENSION INT NOT NULL,
+                AREA INT DEFAULT NULL,
+                DEPARTAMENTO INT DEFAULT NULL,
+                KEY AREA (AREA),
+                KEY DEPARTAMENTO (DEPARTAMENTO),
+                CONSTRAINT extensiones_ibfk_1 FOREIGN KEY (AREA) REFERENCES areas (ID_AREAS),
+                CONSTRAINT extensiones_ibfk_2 FOREIGN KEY (DEPARTAMENTO) REFERENCES departamentos (ID_DEPARTAMENTOS)
             )
         """)
         
@@ -471,6 +487,64 @@ def eliminar_colaborador(id):
     mysql.connection.commit()
     cur.close()
     return redirect(url_for('crud_colaboradores'))
+
+# --------------------------------------CRUD de extensiones----------------------------------------------------------------------
+@app.route('/extensiones', methods=['GET', 'POST'])
+def crud_extensiones():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    # Obtener áreas y departamentos para los selects
+    cur.execute("SELECT ID_AREAS, AREA FROM areas ORDER BY AREA")
+    areas = cur.fetchall()
+    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
+    departamentos = cur.fetchall()
+    # Crear
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        extension = request.form.get('extension')
+        area = request.form.get('area')
+        departamento = request.form.get('departamento')
+        if nombre and extension:
+            cur.execute("INSERT INTO extensiones (NOMBRE, EXTENSION, AREA, DEPARTAMENTO) VALUES (%s, %s, %s, %s)", (nombre, extension, area, departamento))
+            mysql.connection.commit()
+    # Leer
+    cur.execute("""
+        SELECT e.ID_EXTENSIONES, e.NOMBRE, e.EXTENSION, a.AREA, d.DEPARTAMENTO, e.AREA, e.DEPARTAMENTO
+        FROM extensiones e
+        LEFT JOIN areas a ON e.AREA = a.ID_AREAS
+        LEFT JOIN departamentos d ON e.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        ORDER BY e.NOMBRE
+    """)
+    extensiones = cur.fetchall()
+    cur.close()
+    return render_template('Extensiones/CRUD_Extensiones.html', extensiones=extensiones, areas=areas, departamentos=departamentos)
+
+# Editar extension
+@app.route('/extensiones/editar/<int:id>', methods=['POST'])
+def editar_extension(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    nombre = request.form.get('nombre')
+    extension = request.form.get('extension')
+    area = request.form.get('area')
+    departamento = request.form.get('departamento')
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE extensiones SET NOMBRE = %s, EXTENSION = %s, AREA = %s, DEPARTAMENTO = %s WHERE ID_EXTENSIONES = %s", (nombre, extension, area, departamento, id))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('crud_extensiones'))
+
+# Eliminar extension
+@app.route('/extensiones/eliminar/<int:id>', methods=['POST'])
+def eliminar_extension(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM extensiones WHERE ID_EXTENSIONES = %s", (id,))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('crud_extensiones'))
 
 if __name__ == "__main__":
     print("🚀 Iniciando servidor Flask...")

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>CRUD Extensiones</title>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<style>
+		.table-fixed {
+			table-layout: fixed;
+			width: 100%;
+		}
+
+		.table-fixed th,
+		.table-fixed td {
+			overflow: hidden;
+			word-break: break-word;
+		}
+
+		.table-fixed th:nth-child(1),
+		.table-fixed td:nth-child(1) {
+			min-width: 80px;
+			width: 80px;
+		}
+
+		.table-fixed th:nth-child(2),
+		.table-fixed td:nth-child(2) {
+			min-width: 200px;
+			width: 200px;
+		}
+
+		.table-fixed th:nth-child(3),
+		.table-fixed td:nth-child(3) {
+			min-width: 90px;
+			width: 90px;
+		}
+
+		.table-fixed th:nth-child(4),
+		.table-fixed td:nth-child(4) {
+			min-width: 160px;
+			width: 160px;
+		}
+	</style>
+	<style>
+		.table thead th {
+			background: #0d3b4e;
+			color: #fff;
+		}
+
+		.table tbody tr:nth-child(even) {
+			background: #f2f6fa;
+		}
+
+		.btn-action {
+			margin-right: 4px;
+		}
+
+		.search-box {
+			max-width: 300px;
+		}
+	</style>
+</head>
+
+<body>
+	<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+			<a class="navbar-brand" href="{{ url_for('index') }}">Extensiones</a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">Bienvenido, {{ session.username }}</span>
+                <a class="nav-link" href="{{ url_for('logout') }}">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+	<div class="container mt-5">
+		<div class="d-flex justify-content-between align-items-center mb-3">
+			<a href="/menu" class="btn btn-secondary">&larr; Regresar al menú</a>
+			<div class="ms-3" style="min-width:350px; max-width:500px; width:100%;">
+				<select id="selectArea" class="form-select" onchange="filtrarPorArea()">
+					<option value="">-- Todas las áreas --</option>
+					{% set nombres_area = areas | map(attribute=1) | list %}
+					{% for nombre in nombres_area | unique %}
+					<option value="{{ nombre }}">{{ nombre }}</option>
+					{% endfor %}
+				</select>
+			</div>
+		</div>
+		<!-- Modal para editar extensión -->
+		<div class="modal fade" id="modalEditar" tabindex="-1" aria-labelledby="modalEditarLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<form id="formEditar" method="POST">
+						<div class="modal-header">
+							<h5 class="modal-title" id="modalEditarLabel">Editar Extensión</h5>
+							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+						</div>
+						<div class="modal-body">
+							<input type="hidden" name="id" id="editarId">
+							<div class="mb-3">
+								<label for="editarNombre" class="form-label">Nombre</label>
+								<input type="text" class="form-control" name="nombre" id="editarNombre" required>
+							</div>
+							<div class="mb-3">
+								<label for="editarExtension" class="form-label">Extensión</label>
+								<input type="number" class="form-control" name="extension" id="editarExtension" required>
+							</div>
+							<div class="mb-3">
+								<label for="editarArea" class="form-label">Área</label>
+								<select class="form-select" name="area" id="editarArea" required>
+									<option value="">Seleccione un área</option>
+									{% for a in areas %}
+										<option value="{{ a[0] }}">{{ a[1] }}</option>
+									{% endfor %}
+								</select>
+							</div>
+							<div class="mb-3">
+								<label for="editarDepartamento" class="form-label">Departamento</label>
+								<select class="form-select" name="departamento" id="editarDepartamento" required>
+									<option value="">Seleccione un departamento</option>
+									{% for d in departamentos %}
+										<option value="{{ d[0] }}">{{ d[1] }}</option>
+									{% endfor %}
+								</select>
+							</div>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+							<button type="submit" class="btn btn-primary">Guardar cambios</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+		<!-- Modales reubicados para compatibilidad Bootstrap -->
+		<!-- Modal para agregar extensión -->
+		<div class="modal fade" id="modalAgregar" tabindex="-1" aria-labelledby="modalAgregarLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<form method="POST" action="{{ url_for('crud_extensiones') }}">
+						<div class="modal-header">
+							<h5 class="modal-title" id="modalAgregarLabel">Agregar Extensión</h5>
+							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+						</div>
+						<div class="modal-body">
+							<div class="mb-3">
+								<label for="nuevoNombre" class="form-label">Nombre</label>
+								<input type="text" class="form-control" name="nombre" id="nuevoNombre" required>
+							</div>
+							<div class="mb-3">
+								<label for="nuevaExtension" class="form-label">Extensión</label>
+								<input type="number" class="form-control" name="extension" id="nuevaExtension" required>
+							</div>
+							<div class="mb-3">
+								<label for="nuevaArea" class="form-label">Área</label>
+								<select class="form-select" name="area" id="nuevaArea" required>
+									<option value="">Seleccione un área</option>
+									{% for a in areas %}
+										<option value="{{ a[0] }}">{{ a[1] }}</option>
+									{% endfor %}
+								</select>
+							</div>
+							<div class="mb-3">
+								<label for="nuevoDepartamento" class="form-label">Departamento</label>
+								<select class="form-select" name="departamento" id="nuevoDepartamento" required>
+									<option value="">Seleccione un departamento</option>
+									{% for d in departamentos %}
+										<option value="{{ d[0] }}">{{ d[1] }}</option>
+									{% endfor %}
+								</select>
+							</div>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+							<button type="submit" class="btn btn-primary">Agregar</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+		<!-- Modal para editar departamento -->
+		<div class="modal fade" id="modalEditar" tabindex="-1" aria-labelledby="modalEditarLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<form id="formEditar" method="POST">
+						<div class="modal-header">
+							<h5 class="modal-title" id="modalEditarLabel">Editar Departamento</h5>
+							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+						</div>
+						<div class="modal-body">
+							<input type="hidden" name="id" id="editarId">
+							<div class="mb-3">
+								<label for="editarDepartamento" class="form-label">Departamento</label>
+								<input type="text" class="form-control" name="departamento" id="editarDepartamento"
+									required>
+							</div>
+							<div class="mb-3">
+								<label for="editarDescripcion" class="form-label">Descripción</label>
+								<input type="text" class="form-control" name="descripcion" id="editarDescripcion"
+									required>
+							</div>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+							<button type="submit" class="btn btn-primary">Guardar cambios</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+		<div class="d-flex justify-content-between align-items-center mb-3">
+			<h2>Gestión de Extensiones</h2>
+			<button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalAgregar">+ Nueva extensión</button>
+		</div>
+		<table class="table table-bordered table-fixed" id="tablaExtensiones">
+			<thead>
+				<tr>
+					<th>ID</th>
+					<th>Nombre</th>
+					<th>Extensión</th>
+					<th>Área</th>
+					<th>Departamento</th>
+					<th>Acciones</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for ext in extensiones %}
+				<tr>
+					<td>{{ ext[0] }}</td>
+					<td class="ext-nombre">{{ ext[1] }}</td>
+					<td class="ext-extension">{{ ext[2] }}</td>
+					<td class="ext-area" data-area-id="{{ ext[5] }}">{{ ext[3] }}</td>
+					<td class="ext-departamento" data-dep-id="{{ ext[6] }}">{{ ext[4] }}</td>
+					<td>
+						<button type="button" class="btn btn-sm btn-primary btn-action" title="Editar"
+							data-bs-toggle="modal" data-bs-target="#modalEditar"
+							data-id="{{ ext[0] }}"
+							data-nombre="{{ ext[1]|e }}"
+							data-extension="{{ ext[2] }}"
+							data-area-id="{{ ext[5] }}"
+							data-dep-id="{{ ext[6] }}"
+							onclick="llenarFormularioEditarDesdeBoton(this)">
+							<i class="bi bi-pencil"></i>
+						</button>
+						<form method="POST" action="{{ url_for('eliminar_extension', id=ext[0]) }}" class="d-inline">
+							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i class="bi bi-trash"></i></button>
+						</form>
+					</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+	<script>
+		function llenarFormularioEditarDesdeBoton(btn) {
+			var id = btn.getAttribute('data-id');
+			var nombre = btn.getAttribute('data-nombre');
+			var extension = btn.getAttribute('data-extension');
+			var areaId = btn.getAttribute('data-area-id');
+			var depId = btn.getAttribute('data-dep-id');
+			document.getElementById('formEditar').action = '/extensiones/editar/' + id;
+			document.getElementById('editarId').value = id;
+			document.getElementById('editarNombre').value = nombre;
+			document.getElementById('editarExtension').value = extension;
+			document.getElementById('editarArea').value = areaId;
+			document.getElementById('editarDepartamento').value = depId;
+		}
+		function filtrarPorArea() {
+			var select = document.getElementById('selectArea');
+			var valor = select.value;
+			var tabla = document.getElementById('tablaExtensiones');
+			var filas = tabla.getElementsByTagName('tr');
+			for (var i = 1; i < filas.length; i++) { // i=1 para saltar el encabezado
+				var celda = filas[i].getElementsByClassName('ext-area')[0];
+				if (celda) {
+					if (valor === "" || celda.textContent.trim() === valor) {
+						filas[i].style.display = '';
+					} else {
+						filas[i].style.display = 'none';
+					}
+				}
+			}
+		}
+	</script>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
