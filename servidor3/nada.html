@@ -1,0 +1,58 @@
+# --------------------------------------CRUD de correos----------------------------------------------------------------------
+@app.route('/correos', methods=['GET', 'POST'])
+def crud_correos():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    # Obtener áreas y departamentos para los selects
+    cur.execute("SELECT ID_AREAS, AREA FROM areas ORDER BY AREA")
+    areas = cur.fetchall()
+    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
+    departamentos = cur.fetchall()
+    # Crear
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        correo = request.form.get('correo')
+        area = request.form.get('area')
+        departamento = request.form.get('departamento')
+        if nombre and correo and area and departamento:
+            cur.execute("INSERT INTO correos (NOMBRE, CORREO, AREA, DEPARTAMENTO) VALUES (%s, %s, %s, %s)", (nombre, correo, area, departamento))
+            mysql.connection.commit()
+    # Leer
+    cur.execute("""
+        SELECT c.ID_CORREOS, c.NOMBRE, c.CORREO, a.AREA, d.DEPARTAMENTO, c.AREA, c.DEPARTAMENTO
+        FROM correos c
+        LEFT JOIN areas a ON c.AREA = a.ID_AREAS
+        LEFT JOIN departamentos d ON c.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        ORDER BY c.NOMBRE
+    """)
+    correos = cur.fetchall()
+    cur.close()
+    return render_template('Correos/CRUD_Correos.html', correos=correos, areas=areas, departamentos=departamentos)
+
+# Editar correo
+@app.route('/correos/editar/<int:id>', methods=['POST'])
+def editar_correo(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    nombre = request.form.get('nombre')
+    correo = request.form.get('correo')
+    area = request.form.get('area')
+    departamento = request.form.get('departamento')
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE correos SET NOMBRE = %s, CORREO = %s, AREA = %s, DEPARTAMENTO = %s WHERE ID_CORREOS = %s", (nombre, correo, area, departamento, id))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('crud_correos'))
+
+# Eliminar correo
+@app.route('/correos/eliminar/<int:id>', methods=['POST'])
+def eliminar_correo(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM correos WHERE ID_CORREOS = %s", (id,))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('crud_correos'))
+

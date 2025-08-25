@@ -135,6 +135,38 @@ def init_db():
                 CONSTRAINT extensiones_ibfk_2 FOREIGN KEY (DEPARTAMENTO) REFERENCES departamentos (ID_DEPARTAMENTOS)
             )
         """)
+
+        # Crear tabla de celulares relacionada con áreas y departamentos
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS celulares (
+                ID_CELULARES INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+                NOMBRE VARCHAR(100) NOT NULL,
+                CELULAR BIGINT NOT NULL,
+                AREA INT NOT NULL,
+                DEPARTAMENTO INT NOT NULL,
+                KEY AREA (AREA),
+                KEY DEPARTAMENTO (DEPARTAMENTO),
+                CONSTRAINT celulares_ibfk_1 FOREIGN KEY (AREA) REFERENCES areas (ID_AREAS),
+                CONSTRAINT celulares_ibfk_2 FOREIGN KEY (DEPARTAMENTO) REFERENCES departamentos (ID_DEPARTAMENTOS)
+            )
+        """)
+
+        # Crear tabla de correos relacionada con áreas y departamentos
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS correos (
+                ID_CORREOS INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+                NOMBRE VARCHAR(100) NOT NULL,
+                CORREO VARCHAR(50) NOT NULL,
+                AREA INT NOT NULL,
+                DEPARTAMENTO INT NOT NULL,
+                KEY AREA (AREA),
+                KEY DEPARTAMENTO (DEPARTAMENTO),
+                CONSTRAINT correos_ibfk_1 FOREIGN KEY (AREA) REFERENCES areas (ID_AREAS),
+                CONSTRAINT correos_ibfk_2 FOREIGN KEY (DEPARTAMENTO) REFERENCES departamentos (ID_DEPARTAMENTOS)
+            )
+        """)
+        
+        
         
         mysql.connection.commit()
         cur.close()
@@ -545,6 +577,126 @@ def eliminar_extension(id):
     mysql.connection.commit()
     cur.close()
     return redirect(url_for('crud_extensiones'))
+
+# --------------------------------------CRUD de celulares----------------------------------------------------------------------
+@app.route('/celulares', methods=['GET', 'POST'])
+def crud_celulares():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    # Obtener áreas y departamentos para los selects
+    cur.execute("SELECT ID_AREAS, AREA FROM areas ORDER BY AREA")
+    areas = cur.fetchall()
+    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
+    departamentos = cur.fetchall()
+    # Crear
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        celular = request.form.get('celular')
+        area = request.form.get('area')
+        departamento = request.form.get('departamento')
+        if nombre and celular and area and departamento:
+            cur.execute("INSERT INTO celulares (NOMBRE, CELULAR, AREA, DEPARTAMENTO) VALUES (%s, %s, %s, %s)", (nombre, celular, area, departamento))
+            mysql.connection.commit()
+    # Leer
+    cur.execute("""
+        SELECT c.ID_CELULARES, c.NOMBRE, c.CELULAR, a.AREA, d.DEPARTAMENTO, c.AREA, c.DEPARTAMENTO
+        FROM celulares c
+        LEFT JOIN areas a ON c.AREA = a.ID_AREAS
+        LEFT JOIN departamentos d ON c.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        ORDER BY c.NOMBRE
+    """)
+    celulares = cur.fetchall()
+    cur.close()
+    return render_template('Celulares/CRUD_Celulares.html', celulares=celulares, areas=areas, departamentos=departamentos)
+
+# Editar celular
+@app.route('/celulares/editar/<int:id>', methods=['POST'])
+def editar_celular(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    nombre = request.form.get('nombre')
+    celular = request.form.get('celular')
+    area = request.form.get('area')
+    departamento = request.form.get('departamento')
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE celulares SET NOMBRE = %s, CELULAR = %s, AREA = %s, DEPARTAMENTO = %s WHERE ID_CELULARES = %s", (nombre, celular, area, departamento, id))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('crud_celulares'))
+
+# Eliminar celular
+@app.route('/celulares/eliminar/<int:id>', methods=['POST'])
+def eliminar_celular(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM celulares WHERE ID_CELULARES = %s", (id,))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('crud_celulares'))
+
+
+# --------------------------------------CRUD de correos----------------------------------------------------------------------
+@app.route('/correos', methods=['GET', 'POST'])
+def crud_correos():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    # Obtener áreas y departamentos para los selects
+    cur.execute("SELECT ID_AREAS, AREA FROM areas ORDER BY AREA")
+    areas = cur.fetchall()
+    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
+    departamentos = cur.fetchall()
+    # Crear
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        correo = request.form.get('correo')
+        area = request.form.get('area')
+        departamento = request.form.get('departamento')
+        if nombre and correo and area and departamento:
+            cur.execute("INSERT INTO correos (NOMBRE, CORREO, AREA, DEPARTAMENTO) VALUES (%s, %s, %s, %s)", (nombre, correo, area, departamento))
+            mysql.connection.commit()
+    # Leer
+    cur.execute("""
+        SELECT c.ID_CORREOS, c.NOMBRE, c.CORREO, a.AREA, d.DEPARTAMENTO, c.AREA, c.DEPARTAMENTO
+        FROM correos c
+        LEFT JOIN areas a ON c.AREA = a.ID_AREAS
+        LEFT JOIN departamentos d ON c.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        ORDER BY c.NOMBRE
+    """)
+    correos = cur.fetchall()
+    cur.close()
+    return render_template('Correos/CRUD_Correos.html', correos=correos, areas=areas, departamentos=departamentos)
+
+# Editar correo
+@app.route('/correos/editar/<int:id>', methods=['POST'])
+def editar_correo(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    nombre = request.form.get('nombre')
+    correo = request.form.get('correo')
+    area = request.form.get('area')
+    departamento = request.form.get('departamento')
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE correos SET NOMBRE = %s, CORREO = %s, AREA = %s, DEPARTAMENTO = %s WHERE ID_CORREOS = %s", (nombre, correo, area, departamento, id))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('crud_correos'))
+
+# Eliminar correo
+@app.route('/correos/eliminar/<int:id>', methods=['POST'])
+def eliminar_correo(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM correos WHERE ID_CORREOS = %s", (id,))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('crud_correos'))
+
+
+
 
 if __name__ == "__main__":
     print("🚀 Iniciando servidor Flask...")
