@@ -20,7 +20,6 @@ app.config['MYSQL_PASSWORD'] = os.getenv("********", "********")
 app.config['MYSQL_DB'] = os.getenv("********", "********")
 app.config['MYSQL_PORT'] = int(os.getenv("********", 3306))
 
-
 # Inicializar la base de datos
 mysql = MySQL(app)
 
@@ -215,8 +214,7 @@ def menu():
 # Ruta para mostrar la vista de extensiones
 @app.route('/vextensiones')
 def vextensiones():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
+    
     cur = mysql.connection.cursor()
     cur.execute("SELECT e.ID_EXTENSIONES, e.NOMBRE, e.EXTENSION, a.AREA, d.DEPARTAMENTO, e.AREA, e.DEPARTAMENTO FROM extensiones e LEFT JOIN areas a ON e.AREA = a.ID_AREAS LEFT JOIN departamentos d ON e.DEPARTAMENTO = d.ID_DEPARTAMENTOS ORDER BY e.NOMBRE")
     extensiones = cur.fetchall()
@@ -226,12 +224,21 @@ def vextensiones():
 # Ruta para mostrar la vista de celulares
 @app.route('/vcelulares')
 def vcelulares():
-    return render_template('DTelefonico/VCelulares/Celulares.html')
+    
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT c.ID_CELULARES, c.NOMBRE, c.CELULAR, a.AREA, d.DEPARTAMENTO, a.AREA, d.DEPARTAMENTO FROM celulares c LEFT JOIN areas a ON c.AREA = a.ID_AREAS LEFT JOIN departamentos d ON c.DEPARTAMENTO = d.ID_DEPARTAMENTOS ORDER BY c.NOMBRE")
+    celulares = cur.fetchall()
+    cur.close()
+    return render_template('DTelefonico/VCelulares/Celulares.html', celulares=celulares)
 
-# Ruta para mostrar la vista de correos
 @app.route('/vcorreos')
 def vcorreos():
-    return render_template('DTelefonico/VCorreos/Correos.html')
+    
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT c.ID_CORREOS, c.NOMBRE, c.CORREO, a.ID_AREAS, a.AREA, d.DEPARTAMENTO FROM correos c LEFT JOIN areas a ON c.AREA = a.ID_AREAS LEFT JOIN departamentos d ON c.DEPARTAMENTO = d.ID_DEPARTAMENTOS ORDER BY c.NOMBRE")
+    correos = cur.fetchall()
+    cur.close()
+    return render_template('DTelefonico/VCorreos/Correos.html', correos=correos)
 
  # --------------------------------------Registro----------------------------------------------------------------------
 

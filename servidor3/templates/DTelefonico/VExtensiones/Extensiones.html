@@ -108,14 +108,10 @@
                     style="height: 40px; display: block; margin: 0 auto;">
             </div>
             <ul class="menu-list">
-                <li><button class="menu-btn active" onclick="location.href='/vextensiones'" type="button"><i
-                            class="bi bi-house-door"></i> Extensiones</button></li>
-                <li><button class="menu-btn" onclick="location.href='/vcelulares'" type="button"><i
-                            class="bi bi-journal-bookmark"></i> Celulares</button></li>
-                <li><button class="menu-btn" onclick="location.href='/vcorreos'" type="button"><i
-                            class="bi bi-clipboard-check"></i> Correos <span class="menu-badge">3</span></button></li>
-                <li><button class="menu-btn" onclick="location.href='/login'" type="button"><i
-                            class="bi bi-calendar-event"></i> Iniciar sesión</button></li>
+                <li><button class="menu-btn active" onclick="location.href='/vextensiones'" type="button"><i class="bi bi-telephone"></i> Extensiones</button></li>
+                <li><button class="menu-btn" onclick="location.href='/vcelulares'" type="button"><i class="bi bi-phone"></i> Celulares</button></li>
+                <li><button class="menu-btn" onclick="location.href='/vcorreos'" type="button"><i class="bi bi-envelope"></i> Correos <span class="menu-badge">3</span></button></li>
+                <li><button class="menu-btn" onclick="location.href='/login'" type="button"><i class="bi bi-person-circle"></i> Iniciar sesión</button></li>
             </ul>
         </nav>
         <div class="main-content" style="width:100%;">
@@ -124,18 +120,20 @@
                 <select id="filtroArea" class="form-select shadow-sm"
                     style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;"
                     onchange="filtrarTabla()">
-                    <option value="">Filtrar por Área</option>
-                    {% for ext in extensiones %}
-                    {% if ext[3] %}<option value="{{ ext[3] }}">{{ ext[3] }}</option>{% endif %}
-                    {% endfor %}
+                        <option value="">Filtrar por Área</option>
+                        {% set areas_unicas = extensiones | map(attribute=3) | unique | list %}
+                        {% for area in areas_unicas %}
+                            {% if area %}<option value="{{ area }}">{{ area }}</option>{% endif %}
+                        {% endfor %}
                 </select>
                 <select id="filtroDepartamento" class="form-select shadow-sm"
                     style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;"
                     onchange="filtrarTabla()">
-                    <option value="">Filtrar por Departamento</option>
-                    {% for ext in extensiones %}
-                    {% if ext[4] %}<option value="{{ ext[4] }}">{{ ext[4] }}</option>{% endif %}
-                    {% endfor %}
+                        <option value="">Filtrar por Departamento</option>
+                        {% set deps_unicos = extensiones | map(attribute=4) | unique | list %}
+                        {% for dep in deps_unicos %}
+                            {% if dep %}<option value="{{ dep }}">{{ dep }}</option>{% endif %}
+                        {% endfor %}
                 </select>
             </div>
             <div class="card shadow-sm"
