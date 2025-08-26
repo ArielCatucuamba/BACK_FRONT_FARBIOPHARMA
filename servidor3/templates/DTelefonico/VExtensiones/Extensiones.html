@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extensiones - Navegación</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: #f7faff;
+        }
+
+        .sidebar {
+            background: #fff;
+            border-radius: 20px;
+            width: 280px;
+            min-width: 280px;
+            padding: 2rem 1.5rem;
+            margin: 32px 0 32px 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+            border: 2px solid #e3eafc;
+        }
+
+        .sidebar .logo {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #2d3a4a;
+            display: flex;
+            align-items: center;
+            margin: 32px 0 32px 0px;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        .sidebar .search-box {
+            width: 100%;
+            margin-bottom: 2rem;
+        }
+
+        .sidebar .search-box input {
+            border-radius: 12px;
+            margin-left: 10px;
+            padding: 2rem 0 2rem 0;
+            padding: 0.7rem 1rem;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        .sidebar .menu-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+        }
+
+        .sidebar .menu-list li {
+            margin-bottom: 18px;
+        }
+
+        .sidebar .menu-btn {
+            width: 100%;
+            background: none;
+            border: none;
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 1.15rem;
+            color: #2d3a4a;
+            border-radius: 10px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .sidebar .menu-btn.active,
+        .sidebar .menu-btn:hover {
+            background: #e3eafc;
+            color: #14506b;
+        }
+
+        .sidebar .menu-badge {
+            background: #ffb700;
+            color: #fff;
+            border-radius: 50%;
+            font-size: 0.85rem;
+            padding: 2px 8px;
+            margin-left: 8px;
+        }
+
+        .main-content {
+            margin-left: 0px;
+            padding: 2rem 50px 2rem 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="display: flex; min-height: 100vh;">
+        <nav class="sidebar">
+            <div class="logo">
+                <img src="/static/images/logo_Farbiopharma.png" alt="Farbiopharma"
+                    style="height: 40px; display: block; margin: 0 auto;">
+            </div>
+            <ul class="menu-list">
+                <li><button class="menu-btn active" onclick="location.href='/vextensiones'" type="button"><i
+                            class="bi bi-house-door"></i> Extensiones</button></li>
+                <li><button class="menu-btn" onclick="location.href='/vcelulares'" type="button"><i
+                            class="bi bi-journal-bookmark"></i> Celulares</button></li>
+                <li><button class="menu-btn" onclick="location.href='/vcorreos'" type="button"><i
+                            class="bi bi-clipboard-check"></i> Correos <span class="menu-badge">3</span></button></li>
+                <li><button class="menu-btn" onclick="location.href='/login'" type="button"><i
+                            class="bi bi-calendar-event"></i> Iniciar sesión</button></li>
+            </ul>
+        </nav>
+        <div class="main-content" style="width:100%;">
+            <h2 class="mb-4" style="color:#14506b; font-weight:700; text-align:left;">Extensiones Telefónicas</h2>
+            <div class="d-flex gap-3 mb-4" style="justify-content:left;">
+                <select id="filtroArea" class="form-select shadow-sm"
+                    style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;"
+                    onchange="filtrarTabla()">
+                    <option value="">Filtrar por Área</option>
+                    {% for ext in extensiones %}
+                    {% if ext[3] %}<option value="{{ ext[3] }}">{{ ext[3] }}</option>{% endif %}
+                    {% endfor %}
+                </select>
+                <select id="filtroDepartamento" class="form-select shadow-sm"
+                    style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;"
+                    onchange="filtrarTabla()">
+                    <option value="">Filtrar por Departamento</option>
+                    {% for ext in extensiones %}
+                    {% if ext[4] %}<option value="{{ ext[4] }}">{{ ext[4] }}</option>{% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="card shadow-sm"
+                style="border-radius:18px; background:#fff; border:2px solid #e3eafc; width:100%;">
+                <div class="card-body p-0">
+                    <table class="table mb-0" style="border-radius:12px; overflow:hidden; width:100%;">
+                        <thead style="background:#14506b; color:#fff;">
+                            <tr style="border-radius:12px;">
+                                <th style="border:none; font-weight:600; min-width:220px;">Nombre</th>
+                                <th style="border:none; font-weight:600; min-width:120px;">Extensión</th>
+                                <th style="border:none; font-weight:600; min-width:180px;">Área</th>
+                                <th style="border:none; font-weight:600; min-width:180px;">Departamento</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaExtensiones">
+                            {% for ext in extensiones %}
+                            <tr{% if loop.index0 % 2==0 %} style="background:#f7faff;" {% else %}
+                                style="background:#fff;" {% endif %}>
+                                <td class="ext-nombre" style="color:#2d3a4a; border:none; min-width:220px;">{{ ext[1] }}
+                                </td>
+                                <td class="ext-extension" style="color:#2d3a4a; border:none; min-width:120px;">{{ ext[2]
+                                    }}</td>
+                                <td class="ext-area"
+                                    style="color:#14506b; border:none; font-weight:500; min-width:180px;">{{ ext[3] }}
+                                </td>
+                                <td class="ext-departamento"
+                                    style="color:#14506b; border:none; font-weight:500; min-width:180px;">{{ ext[4] }}
+                                </td>
+                                </tr>
+                                {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <script>
+            function filtrarTabla() {
+                var area = document.getElementById('filtroArea').value;
+                var departamento = document.getElementById('filtroDepartamento').value;
+                var filas = document.querySelectorAll('#tablaExtensiones tr');
+                filas.forEach(function (fila) {
+                    var areaCelda = fila.querySelector('.ext-area').textContent.trim();
+                    var depCelda = fila.querySelector('.ext-departamento').textContent.trim();
+                    var mostrar = true;
+                    if (area && areaCelda !== area) mostrar = false;
+                    if (departamento && depCelda !== departamento) mostrar = false;
+                    fila.style.display = mostrar ? '' : 'none';
+                });
+            }
+        </script>
+    </div>
+    </div>
+</body>
+
+</html>

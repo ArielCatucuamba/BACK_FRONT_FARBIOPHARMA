@@ -1,5 +1,6 @@
 
 
+
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_mysqldb import MySQL
 import bcrypt
@@ -208,7 +209,31 @@ def menu():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     return render_template('menu.html')
+    
+ # --------------------------------------Directorio Telefonico----------------------------------------------------------------------
 
+# Ruta para mostrar la vista de extensiones
+@app.route('/vextensiones')
+def vextensiones():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT e.ID_EXTENSIONES, e.NOMBRE, e.EXTENSION, a.AREA, d.DEPARTAMENTO, e.AREA, e.DEPARTAMENTO FROM extensiones e LEFT JOIN areas a ON e.AREA = a.ID_AREAS LEFT JOIN departamentos d ON e.DEPARTAMENTO = d.ID_DEPARTAMENTOS ORDER BY e.NOMBRE")
+    extensiones = cur.fetchall()
+    cur.close()
+    return render_template('DTelefonico/VExtensiones/Extensiones.html', extensiones=extensiones)
+
+# Ruta para mostrar la vista de celulares
+@app.route('/vcelulares')
+def vcelulares():
+    return render_template('DTelefonico/VCelulares/Celulares.html')
+
+# Ruta para mostrar la vista de correos
+@app.route('/vcorreos')
+def vcorreos():
+    return render_template('DTelefonico/VCorreos/Correos.html')
+
+ # --------------------------------------Registro----------------------------------------------------------------------
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -249,6 +274,8 @@ def register():
         return redirect(url_for('login'))
     
     return render_template('Login/register.html')
+
+ # --------------------------------------Cerrar sesión----------------------------------------------------------------------
 
 @app.route('/logout')
 def logout():
