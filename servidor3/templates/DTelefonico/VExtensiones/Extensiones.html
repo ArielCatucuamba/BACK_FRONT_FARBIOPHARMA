@@ -117,6 +117,8 @@
         <div class="main-content" style="width:100%;">
             <h2 class="mb-4" style="color:#14506b; font-weight:700; text-align:left;">Extensiones Telefónicas</h2>
             <div class="d-flex gap-3 mb-4" style="justify-content:left;">
+                <input type="text" id="filtroNombre" class="form-control shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" placeholder="Filtrar por Nombre" onkeyup="filtrarTabla()">
+                <input type="text" id="filtroExtension" class="form-control shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" placeholder="Filtrar por Extensión" onkeyup="filtrarTabla()">
                 <select id="filtroArea" class="form-select shadow-sm"
                     style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;"
                     onchange="filtrarTabla()">
@@ -171,13 +173,19 @@
         </div>
         <script>
             function filtrarTabla() {
+                var nombre = document.getElementById('filtroNombre').value.toLowerCase();
+                var extension = document.getElementById('filtroExtension').value.toLowerCase();
                 var area = document.getElementById('filtroArea').value;
                 var departamento = document.getElementById('filtroDepartamento').value;
                 var filas = document.querySelectorAll('#tablaExtensiones tr');
                 filas.forEach(function (fila) {
+                    var nombreCelda = fila.querySelector('.ext-nombre').textContent.trim().toLowerCase();
+                    var extensionCelda = fila.querySelector('.ext-extension').textContent.trim().toLowerCase();
                     var areaCelda = fila.querySelector('.ext-area').textContent.trim();
                     var depCelda = fila.querySelector('.ext-departamento').textContent.trim();
                     var mostrar = true;
+                    if (nombre && !nombreCelda.includes(nombre)) mostrar = false;
+                    if (extension && !extensionCelda.includes(extension)) mostrar = false;
                     if (area && areaCelda !== area) mostrar = false;
                     if (departamento && depCelda !== departamento) mostrar = false;
                     fila.style.display = mostrar ? '' : 'none';

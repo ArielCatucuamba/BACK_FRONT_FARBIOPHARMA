@@ -74,15 +74,13 @@
         }
     </style>
 </head>
-<body class="bg-light">
-    <div class="container">
-        <div class="row justify-content-center mt-5">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="text-center">Registrarse</h3>
-                    </div>
-                    <div class="card-body">
+<body style="background: #e9ebef;">
+    <div class="container-fluid" style="min-height:100vh; background:#e9ebef;">
+        <div class="row justify-content-center align-items-center" style="min-height:100vh;">
+            <div class="col-lg-8 mx-auto">
+                <div class="d-flex shadow-lg" style="border-radius:24px; overflow:hidden; background:#fff; min-height:520px; max-height:600px;">
+                    <div class="col-md-6 px-5 py-4 d-flex flex-column justify-content-center" style="background:#fff; min-width:400px; min-height:650px; padding-top:40px; padding-bottom:40px;">
+                        <h3 class="mb-4 text-center" style="color:#14506b; font-weight:700; margin-top:32px;">Registrarse</h3>
                         {% with messages = get_flashed_messages(with_categories=true) %}
                             {% if messages %}
                                 {% for category, message in messages %}
@@ -93,30 +91,31 @@
                                 {% endfor %}
                             {% endif %}
                         {% endwith %}
-
                         <form method="POST">
                             <div class="mb-3">
-                                <label for="username" class="form-label">Usuario</label>
-                                <input type="text" class="form-control" id="username" name="username" required>
+                                <label for="username" class="form-label" style="color:#14506b; font-weight:500;">Usuario</label>
+                                <input type="text" class="form-control" id="username" name="username" required style="background:#f7faff; border:1.5px solid #e3eafc; color:#14506b; border-radius:12px;">
                             </div>
                             <div class="mb-3">
-                                <label for="email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="email" name="email" required>
+                                <label for="email" class="form-label" style="color:#14506b; font-weight:500;">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" required style="background:#f7faff; border:1.5px solid #e3eafc; color:#14506b; border-radius:12px;">
                             </div>
                             <div class="mb-3">
-                                <label for="password" class="form-label">Contraseña</label>
-                                <input type="password" class="form-control" id="password" name="password" required>
+                                <label for="password" class="form-label" style="color:#14506b; font-weight:500;">Contraseña</label>
+                                <input type="password" class="form-control" id="password" name="password" required style="background:#f7faff; border:1.5px solid #e3eafc; color:#14506b; border-radius:12px;">
                             </div>
                             <div class="mb-3">
-                                <label for="confirm_password" class="form-label">Confirmar Contraseña</label>
-                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                <label for="confirm_password" class="form-label" style="color:#14506b; font-weight:500;">Confirmar Contraseña</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required style="background:#f7faff; border:1.5px solid #e3eafc; color:#14506b; border-radius:12px;">
                             </div>
-                            <button type="submit" class="btn btn-success w-100">Registrarse</button>
+                            <button type="submit" class="btn btn-primary w-100" style="background:#14506b; border-radius:12px; font-weight:600; margin-bottom:32px;">Registrarse</button>
                         </form>
-                        
                         <div class="text-center mt-3">
-                            <p>¿Ya te registraste? <a href="/menu">Vuelve al menú aquí</a></p>
+                            <p style="color:#2d3a4a;">¿Ya te registraste? <a href="/menu" style="color:#14506b; font-weight:600;">Vuelve al menú aquí</a></p>
                         </div>
+                    </div>
+                    <div class="col-md-6 d-none d-md-flex align-items-center justify-content-center" style="background:#f7faff; min-height:520px;">
+                        <img src="/static/images/Register.png" alt="Register" style="width:100%; max-width:420px; border-radius:0;">
                     </div>
                 </div>
             </div>

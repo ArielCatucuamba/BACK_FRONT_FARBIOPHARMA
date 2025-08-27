@@ -20,6 +20,7 @@ app.config['MYSQL_PASSWORD'] = os.getenv("********", "********")
 app.config['MYSQL_DB'] = os.getenv("********", "********")
 app.config['MYSQL_PORT'] = int(os.getenv("********", 3306))
 
+
 # Inicializar la base de datos
 mysql = MySQL(app)
 
@@ -173,12 +174,12 @@ def init_db():
 
 @app.route('/')
 def index():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT e.ID_EXTENSIONES, e.NOMBRE, e.EXTENSION, a.AREA, d.DEPARTAMENTO, e.AREA, e.DEPARTAMENTO FROM extensiones e LEFT JOIN areas a ON e.AREA = a.ID_AREAS LEFT JOIN departamentos d ON e.DEPARTAMENTO = d.ID_DEPARTAMENTOS ORDER BY e.NOMBRE")
+    extensiones = cur.fetchall()
+    cur.close()
+    return render_template('DTelefonico/VExtensiones/Extensiones.html', extensiones=extensiones)
     
-    servidor_info = "Servidor 3"
-    return render_template('Areas/CRUD_Areas.html', servidor_info=servidor_info)
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':

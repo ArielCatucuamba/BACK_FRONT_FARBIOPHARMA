@@ -9,33 +9,31 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
         body {
-            background: #0d3b4e;
+    
+            background: #e9ebef;
             min-height: 100vh;
         }
-
         .main-container {
             display: flex;
             height: 100vh;
             align-items: stretch;
         }
-
         .sidebar {
-            background: #0c2f3a;
-            border-radius: 20px;
-            width: 320px;
-            min-width: 320px;
+            background: #e9ebef;
+            border-radius: 16px;
+            width: 340px;
+            min-width: 340px;
             padding: 2rem 1.5rem;
             margin: 32px 0 32px 32px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 24px rgba(13, 59, 78, 0.08);
             height: calc(100vh - 64px);
-            border: 3px solid #000000;
+            border: 4px solid #000000;
         }
-
         .sidebar .logout-btn {
-            background: #0c2f3a;
+            background: #0d3b4e;
             color: #fff;
             border: none;
             border-radius: 8px;
@@ -44,24 +42,20 @@
             font-size: 1.2rem;
             margin-bottom: 2rem;
             box-shadow: 0 2px 8px rgba(13, 59, 78, 0.08);
-            
+            transition: background 0.2s;
         }
-
         .sidebar .logout-btn:hover {
-            background: #000000;
+            background: #14506b;
         }
-
         .menu-list {
             list-style: none;
             padding: 0;
             margin: 0;
             width: 100%;
         }
-
         .menu-list li {
             margin-bottom: 18px;
         }
-
         .menu-btn {
             width: 100%;
             background: none;
@@ -69,7 +63,7 @@
             text-align: left;
             padding: 12px 16px;
             font-size: 1.15rem;
-            color: #fff;
+            color: #14506b;
             border-radius: 8px;
             font-weight: 500;
             display: flex;
@@ -77,13 +71,11 @@
             gap: 12px;
             transition: background 0.2s, color 0.2s;
         }
-
         .menu-btn.active,
         .menu-btn:hover {
-            background: #000000;
-            color: #fff;
+            background: #eafaf1;
+            color: #0d3b4e;
         }
-
         .image-container {
             flex: 1;
             display: flex;
@@ -92,12 +84,11 @@
             margin: 32px;
             height: calc(100vh - 64px);
         }
-
         .main-image {
             max-width: 100%;
             max-height: 100%;
             height: 100%;
-            border-radius: 18px;
+            border-radius: 16px;
             box-shadow: 0 2px 16px rgba(0, 0, 0, 0.10);
             background: #fff;
             object-fit: cover;
@@ -126,7 +117,7 @@
             </ul>
         </div>
         <div class="image-container">
-            <img src="https://ictq.com.br/images/otimizadas/boas-praticas-de-laboratorio-na-Industria-farmaceutica.jpg"
+            <img src="/static/images/menu.png"
                 alt="Imagen" class="main-image">
         </div>
     </div>

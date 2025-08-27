@@ -122,12 +122,14 @@
             <h2 class="mb-4" style="color:#14506b; font-weight:700; text-align:left;">Celulares</h2>
             <div class="d-flex gap-3 mb-4" style="justify-content:left;">
                 <input type="text" id="filtroNombre" class="form-control shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" placeholder="Filtrar por Nombre" onkeyup="filtrarTabla()">
+                <input type="text" id="filtroCelular" class="form-control shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" placeholder="Filtrar por Celular" onkeyup="filtrarTabla()">
                 <select id="filtroArea" class="form-select shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" onchange="filtrarTabla()">
                     <option value="">Filtrar por Área</option>
                     {% set areas_unicas = celulares | map(attribute=4) | unique | list %}
                     {% for area in areas_unicas %}
                         {% if area %}<option value="{{ area }}">{{ area }}</option>{% endif %}
                     {% endfor %}
+                    
                 </select>
                 <select id="filtroDepartamento" class="form-select shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" onchange="filtrarTabla()">
                     <option value="">Filtrar por Departamento</option>
@@ -165,15 +167,18 @@
         <script>
             function filtrarTabla() {
                 var nombre = document.getElementById('filtroNombre').value.toLowerCase();
+                var celular = document.getElementById('filtroCelular').value.toLowerCase();
                 var area = document.getElementById('filtroArea').value;
                 var departamento = document.getElementById('filtroDepartamento').value;
                 var filas = document.querySelectorAll('#tablaCelulares tr');
                 filas.forEach(function (fila) {
                     var nombreCelda = fila.querySelector('.cel-nombre').textContent.trim().toLowerCase();
+                    var celularCelda = fila.querySelector('.cel-celular').textContent.trim().toLowerCase();
                     var areaCelda = fila.querySelector('.cel-area').textContent.trim();
                     var depCelda = fila.querySelector('.cel-departamento').textContent.trim();
                     var mostrar = true;
                     if (nombre && !nombreCelda.includes(nombre)) mostrar = false;
+                    if (celular && !celularCelda.includes(celular)) mostrar = false;
                     if (area && areaCelda !== area) mostrar = false;
                     if (departamento && depCelda !== departamento) mostrar = false;
                     fila.style.display = mostrar ? '' : 'none';
