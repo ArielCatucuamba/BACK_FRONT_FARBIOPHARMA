@@ -75,10 +75,20 @@
         </div>
     </nav>
 
-	<div class="container mt-5">
+		<div class="container mt-5">
+				{% with messages = get_flashed_messages(with_categories=true) %}
+					{% if messages %}
+						{% for category, message in messages %}
+							<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+								{{ message }}
+								<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+							</div>
+						{% endfor %}
+					{% endif %}
+				{% endwith %}
 		<div class="d-flex justify-content-between align-items-center mb-3">
 			<a href="/menu" class="btn btn-secondary">&larr; Regresar al menú</a>
-			<div class="ms-3" style="min-width:250px;">
+			<div class="ms-3" style="min-width:350px; max-width:500px; width:100%;">
 				<select id="filtroArea" class="form-select" onchange="filtrarPorArea()">
 					<option value="">-- Todas las áreas --</option>
 					{% set nombres_area = cargos | map(attribute=2) | list %}

@@ -281,6 +281,8 @@ def register():
         flash('Usuario registrado exitosamente', 'success')
         return redirect(url_for('login'))
     
+    # Limpiar mensajes flash previos (por ejemplo, de login)
+    session.pop('_flashes', None)
     return render_template('Login/register.html')
 
  # --------------------------------------Cerrar sesión----------------------------------------------------------------------
@@ -331,8 +333,12 @@ def eliminar_area(id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM areas WHERE ID_AREAS = %s", (id,))
-    mysql.connection.commit()
+    try:
+        cur.execute("DELETE FROM areas WHERE ID_AREAS = %s", (id,))
+        mysql.connection.commit()
+        flash('Área eliminada exitosamente.', 'success')
+    except Exception as e:
+        flash('No se puede eliminar esta área porque está ligada a otros datos.', 'danger')
     cur.close()
     return redirect(url_for('crud_areas'))
 
@@ -374,8 +380,12 @@ def eliminar_departamento(id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM departamentos WHERE ID_DEPARTAMENTOS = %s", (id,))
-    mysql.connection.commit()
+    try:
+        cur.execute("DELETE FROM departamentos WHERE ID_DEPARTAMENTOS = %s", (id,))
+        mysql.connection.commit()
+        flash('Departamento eliminado exitosamente.', 'success')
+    except Exception as e:
+        flash('No se puede eliminar este departamento porque está ligado a otros datos.', 'danger')
     cur.close()
     return redirect(url_for('departamentos'))
 
@@ -420,8 +430,12 @@ def eliminar_ubicacion(id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM ubicaciones WHERE ID_UBICACIONES = %s", (id,))
-    mysql.connection.commit()
+    try:
+        cur.execute("DELETE FROM ubicaciones WHERE ID_UBICACIONES = %s", (id,))
+        mysql.connection.commit()
+        flash('Ubicación eliminada exitosamente.', 'success')
+    except Exception as e:
+        flash('No se puede eliminar esta ubicación porque está ligada a otros datos.', 'danger')
     cur.close()
     return redirect(url_for('ubicaciones'))
 
@@ -477,8 +491,12 @@ def eliminar_cargo(id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM cargos WHERE ID_CARGOS = %s", (id,))
-    mysql.connection.commit()
+    try:
+        cur.execute("DELETE FROM cargos WHERE ID_CARGOS = %s", (id,))
+        mysql.connection.commit()
+        flash('Cargo eliminado exitosamente.', 'success')
+    except Exception as e:
+        flash('No se puede eliminar este cargo porque está ligado a otros datos.', 'danger')
     cur.close()
     return redirect(url_for('crud_cargos'))
 
