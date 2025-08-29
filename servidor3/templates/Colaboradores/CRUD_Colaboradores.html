@@ -98,12 +98,8 @@
 						<div class="modal-body">
 							<input type="hidden" name="id" id="editarId">
 							<div class="mb-3">
-								<label for="editarNombres" class="form-label">Nombres</label>
-								<input type="text" class="form-control" name="nombres" id="editarNombres" required>
-							</div>
-							<div class="mb-3">
-								<label for="editarApellidos" class="form-label">Apellidos</label>
-								<input type="text" class="form-control" name="apellidos" id="editarApellidos" required>
+								<label for="editarNombre" class="form-label">Nombre y Apellido</label>
+								<input type="text" class="form-control" name="nombre" id="editarNombre" required placeholder="Ejemplo: Juan Pérez">
 							</div>
 							<div class="mb-3">
 								<label for="editarArea" class="form-label">Área</label>
@@ -162,12 +158,8 @@
 						</div>
 						<div class="modal-body">
 							<div class="mb-3">
-								<label for="nuevoNombres" class="form-label">Nombres</label>
-								<input type="text" class="form-control" name="nombres" id="nuevoNombres" required>
-							</div>
-							<div class="mb-3">
-								<label for="nuevoApellidos" class="form-label">Apellidos</label>
-								<input type="text" class="form-control" name="apellidos" id="nuevoApellidos" required>
+								<label for="nuevoNombre" class="form-label">Nombre y Apellido</label>
+								<input type="text" class="form-control" name="nombre" id="nuevoNombre" required placeholder="Ejemplo: Juan Pérez">
 							</div>
 							<div class="mb-3">
 								<label for="nuevaArea" class="form-label">Área</label>
@@ -252,8 +244,7 @@
 			<thead>
 				<tr>
 					<th>ID</th>
-					<th>Nombres</th>
-					<th>Apellidos</th>
+					<th>Nombre</th>
 					<th>Área</th>
 					<th>Departamento</th>
 					<th>Cargo</th>
@@ -265,22 +256,20 @@
 				{% for col in colaboradores %}
 				<tr>
 					<td>{{ col[0] }}</td>
-					<td class="col-nombres">{{ col[1] }}</td>
-					<td class="col-apellidos">{{ col[2] }}</td>
-					<td class="col-area" data-area-id="{{ col[8] }}">{{ col[4] }}</td>
-					<td class="col-departamento" data-dep-id="{{ col[7] }}">{{ col[3] }}</td>
-					<td class="col-cargo" data-cargo-id="{{ col[9] }}">{{ col[5] }}</td>
-					<td class="col-ubicacion" data-ubicacion-id="{{ col[10] }}">{{ col[6] }}</td>
+					<td class="col-nombre">{{ col[1] }}</td>
+					<td class="col-area" data-area-id="{{ col[7] }}">{{ col[3] }}</td>
+					<td class="col-departamento" data-dep-id="{{ col[6] }}">{{ col[2] }}</td>
+					<td class="col-cargo" data-cargo-id="{{ col[8] }}">{{ col[4] }}</td>
+					<td class="col-ubicacion" data-ubicacion-id="{{ col[9] }}">{{ col[5] }}</td>
 					<td>
 						<button type="button" class="btn btn-sm btn-primary btn-action" title="Editar"
 							data-bs-toggle="modal" data-bs-target="#modalEditar"
 							data-id="{{ col[0] }}"
-							data-nombres="{{ col[1]|e }}"
-							data-apellidos="{{ col[2]|e }}"
-							data-area-id="{{ col[8] }}"
-							data-dep-id="{{ col[7] }}"
-							data-cargo-id="{{ col[9] }}"
-							data-ubicacion-id="{{ col[10] }}"
+							data-nombre="{{ col[1]|e }}"
+							data-area-id="{{ col[7] }}"
+							data-dep-id="{{ col[6] }}"
+							data-cargo-id="{{ col[8] }}"
+							data-ubicacion-id="{{ col[9] }}"
 							onclick="llenarFormularioEditarDesdeBoton(this)">
 							<i class="bi bi-pencil"></i>
 						</button>
@@ -296,16 +285,14 @@
 	<script>
 		function llenarFormularioEditarDesdeBoton(btn) {
 			var id = btn.getAttribute('data-id');
-			var nombres = btn.getAttribute('data-nombres');
-			var apellidos = btn.getAttribute('data-apellidos');
+			var nombre = btn.getAttribute('data-nombre');
 			var areaId = btn.getAttribute('data-area-id');
 			var depId = btn.getAttribute('data-dep-id');
 			var cargoId = btn.getAttribute('data-cargo-id');
 			var ubicacionId = btn.getAttribute('data-ubicacion-id');
 			document.getElementById('formEditar').action = '/crud_colaboradores/editar/' + id;
 			document.getElementById('editarId').value = id;
-			document.getElementById('editarNombres').value = nombres;
-			document.getElementById('editarApellidos').value = apellidos;
+			document.getElementById('editarNombre').value = nombre;
 			document.getElementById('editarArea').value = areaId;
 			document.getElementById('editarDepartamento').value = depId;
 			document.getElementById('editarCargo').value = cargoId;

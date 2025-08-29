@@ -99,7 +99,12 @@
 							<input type="hidden" name="id" id="editarId">
 							<div class="mb-3">
 								<label for="editarNombre" class="form-label">Nombre</label>
-								<input type="text" class="form-control" name="nombre" id="editarNombre" required>
+								<input list="listaColaboradores" class="form-control" name="nombre" id="editarNombre" required autocomplete="off">
+								<datalist id="listaColaboradores">
+									{% for nombre in colaboradores %}
+										<option value="{{ nombre }}">{{ nombre }}</option>
+									{% endfor %}
+								</datalist>
 							</div>
 							<div class="mb-3">
 								<label for="editarExtension" class="form-label">Extensión</label>
@@ -145,7 +150,12 @@
 						<div class="modal-body">
 							<div class="mb-3">
 								<label for="nuevoNombre" class="form-label">Nombre</label>
-								<input type="text" class="form-control" name="nombre" id="nuevoNombre" required>
+								<input list="listaColaboradores" class="form-control" name="nombre" id="nuevoNombre" required autocomplete="off">
+								<datalist id="listaColaboradores">
+									{% for nombre in colaboradores %}
+										<option value="{{ nombre }}">{{ nombre }}</option>
+									{% endfor %}
+								</datalist>
 							</div>
 							<div class="mb-3">
 								<label for="nuevaExtension" class="form-label">Extensión</label>

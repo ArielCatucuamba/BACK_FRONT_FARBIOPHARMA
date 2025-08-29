@@ -12,7 +12,7 @@ app = Flask(__name__)
 
 # Configuración de la aplicación
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "tu_clave_secreta_aqui")
-
+#CONFIRMA ESE CAMBIO PFF PFFF FFFFF
 # Configuración de la base de datos MySQL
 app.config['MYSQL_HOST'] = os.getenv("*********", "**********")
 app.config['MYSQL_USER'] = os.getenv("********", "********")
@@ -105,8 +105,7 @@ def init_db():
         cur.execute("""
             CREATE TABLE IF NOT EXISTS colaboradores (
                 ID_COLABORADORES INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-                NOMBRES VARCHAR(100) NOT NULL,
-                APELLIDOS VARCHAR(100) NOT NULL,
+                NOMBRE VARCHAR(100) NOT NULL,
                 DEPARTAMENTO INT DEFAULT NULL,
                 AREA INT DEFAULT NULL,
                 CARGO INT DEFAULT NULL,
@@ -122,7 +121,7 @@ def init_db():
             )
         """)
 
-        # Crear tabla de extensiones relacionada con áreas y departamentos
+        # Crear tabla de extensiones relacionada con áreas y departamentos y colaboradores
         cur.execute("""
             CREATE TABLE IF NOT EXISTS extensiones (
                 ID_EXTENSIONES INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
@@ -133,7 +132,8 @@ def init_db():
                 KEY AREA (AREA),
                 KEY DEPARTAMENTO (DEPARTAMENTO),
                 CONSTRAINT extensiones_ibfk_1 FOREIGN KEY (AREA) REFERENCES areas (ID_AREAS),
-                CONSTRAINT extensiones_ibfk_2 FOREIGN KEY (DEPARTAMENTO) REFERENCES departamentos (ID_DEPARTAMENTOS)
+                CONSTRAINT extensiones_ibfk_2 FOREIGN KEY (DEPARTAMENTO) REFERENCES departamentos (ID_DEPARTAMENTOS),
+                CONSTRAINT extensiones_ibfk_3 FOREIGN KEY (NOMBRE) REFERENCES colaboradores (NOMBRE)
             )
         """)
 
@@ -530,7 +530,7 @@ def crud_colaboradores():
             mysql.connection.commit()
     # Leer
     cur.execute("""
-        SELECT col.ID_COLABORADORES, col.NOMBRES, col.APELLIDOS,
+        SELECT col.ID_COLABORADORES, col.NOMBRE,
                d.DEPARTAMENTO, a.AREA, c.DESCRIPCION, u.DESCRIPCION,
                col.DEPARTAMENTO, col.AREA, col.CARGO, col.UBICACION
         FROM colaboradores col
@@ -538,7 +538,7 @@ def crud_colaboradores():
         LEFT JOIN areas a ON col.AREA = a.ID_AREAS
         LEFT JOIN cargos c ON col.CARGO = c.ID_CARGOS
         LEFT JOIN ubicaciones u ON col.UBICACION = u.ID_UBICACIONES
-        ORDER BY col.NOMBRES, col.APELLIDOS
+        ORDER BY col.NOMBRE
     """)
     colaboradores = cur.fetchall()
     cur.close()
@@ -584,6 +584,9 @@ def crud_extensiones():
     areas = cur.fetchall()
     cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
     departamentos = cur.fetchall()
+    # Obtener colaboradores para el autocompletado
+    cur.execute("SELECT NOMBRE FROM colaboradores ORDER BY NOMBRE")
+    colaboradores = [row[0] for row in cur.fetchall()]
     # Crear
     if request.method == 'POST':
         nombre = request.form.get('nombre')
@@ -603,7 +606,7 @@ def crud_extensiones():
     """)
     extensiones = cur.fetchall()
     cur.close()
-    return render_template('Extensiones/CRUD_Extensiones.html', extensiones=extensiones, areas=areas, departamentos=departamentos)
+    return render_template('Extensiones/CRUD_Extensiones.html', extensiones=extensiones, areas=areas, departamentos=departamentos, colaboradores=colaboradores)
 
 # Editar extension
 @app.route('/extensiones/editar/<int:id>', methods=['POST'])
