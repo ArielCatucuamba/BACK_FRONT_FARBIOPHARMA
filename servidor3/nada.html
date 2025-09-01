@@ -33,6 +33,7 @@ def crud_correos():
 
 # Editar correo
 @app.route('/correos/editar/<int:id>', methods=['POST'])
+@app.route('/cooreos/id/editor')
 def editar_correo(id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
@@ -57,3 +58,5 @@ def eliminar_correo(id):
     cur.close()
     return redirect(url_for('crud_correos'))
 
+|------------|
+|  -         

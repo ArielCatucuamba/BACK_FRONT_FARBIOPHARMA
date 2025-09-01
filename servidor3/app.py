@@ -1,6 +1,3 @@
-
-
-
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_mysqldb import MySQL
 import bcrypt
@@ -12,7 +9,7 @@ app = Flask(__name__)
 
 # Configuración de la aplicación
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "tu_clave_secreta_aqui")
-#CONFIRMA ESE CAMBIO PFF PFFF FFFFF
+
 # Configuración de la base de datos MySQL
 app.config['MYSQL_HOST'] = os.getenv("*********", "**********")
 app.config['MYSQL_USER'] = os.getenv("********", "********")
@@ -110,6 +107,7 @@ def init_db():
                 AREA INT DEFAULT NULL,
                 CARGO INT DEFAULT NULL,
                 UBICACION INT DEFAULT NULL,
+                KEY NOMBRE (NOMBRE),
                 KEY DEPARTAMENTO (DEPARTAMENTO),
                 KEY AREA (AREA),
                 KEY CARGO (CARGO),
@@ -137,7 +135,7 @@ def init_db():
             )
         """)
 
-        # Crear tabla de celulares relacionada con áreas y departamentos
+        # Crear tabla de celulares relacionada con áreas, departamentos y colaboradores
         cur.execute("""
             CREATE TABLE IF NOT EXISTS celulares (
                 ID_CELULARES INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
@@ -148,7 +146,8 @@ def init_db():
                 KEY AREA (AREA),
                 KEY DEPARTAMENTO (DEPARTAMENTO),
                 CONSTRAINT celulares_ibfk_1 FOREIGN KEY (AREA) REFERENCES areas (ID_AREAS),
-                CONSTRAINT celulares_ibfk_2 FOREIGN KEY (DEPARTAMENTO) REFERENCES departamentos (ID_DEPARTAMENTOS)
+                CONSTRAINT celulares_ibfk_2 FOREIGN KEY (DEPARTAMENTO) REFERENCES departamentos (ID_DEPARTAMENTOS),
+                CONSTRAINT celulares_ibfk_3 FOREIGN KEY (NOMBRE) REFERENCES colaboradores (NOMBRE)
             )
         """)
 
@@ -162,8 +161,10 @@ def init_db():
                 DEPARTAMENTO INT NOT NULL,
                 KEY AREA (AREA),
                 KEY DEPARTAMENTO (DEPARTAMENTO),
+                KEY NOMBRE (NOMBRE),
                 CONSTRAINT correos_ibfk_1 FOREIGN KEY (AREA) REFERENCES areas (ID_AREAS),
-                CONSTRAINT correos_ibfk_2 FOREIGN KEY (DEPARTAMENTO) REFERENCES departamentos (ID_DEPARTAMENTOS)
+                CONSTRAINT correos_ibfk_2 FOREIGN KEY (DEPARTAMENTO) REFERENCES departamentos (ID_DEPARTAMENTOS),
+                CONSTRAINT correos_ibfk_3 FOREIGN KEY (NOMBRE) REFERENCES colaboradores (NOMBRE)
             )
         """)
         
@@ -518,16 +519,21 @@ def crud_colaboradores():
     ubicaciones = cur.fetchall()
     # Crear
     if request.method == 'POST':
-        nombres = request.form.get('nombres')
-        apellidos = request.form.get('apellidos')
+        nombre = request.form.get('nombre')
         departamento = request.form.get('departamento')
         area = request.form.get('area')
         cargo = request.form.get('cargo')
         ubicacion = request.form.get('ubicacion')
-        if nombres and apellidos:
-            cur.execute("INSERT INTO colaboradores (NOMBRES, APELLIDOS, DEPARTAMENTO, AREA, CARGO, UBICACION) VALUES (%s, %s, %s, %s, %s, %s)",
-                        (nombres, apellidos, departamento, area, cargo, ubicacion))
-            mysql.connection.commit()
+        if nombre:
+            try:
+                cur.execute("INSERT INTO colaboradores (NOMBRE, DEPARTAMENTO, AREA, CARGO, UBICACION) VALUES (%s, %s, %s, %s, %s)",
+                            (nombre, departamento, area, cargo, ubicacion))
+                mysql.connection.commit()
+                flash('Colaborador agregado exitosamente.', 'success')
+            except Exception as e:
+                flash('Error al agregar colaborador: ' + str(e), 'danger')
+        else:
+            flash('El campo nombre es obligatorio.', 'danger')
     # Leer
     cur.execute("""
         SELECT col.ID_COLABORADORES, col.NOMBRE,
@@ -645,6 +651,9 @@ def crud_celulares():
     areas = cur.fetchall()
     cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
     departamentos = cur.fetchall()
+    # Obtener colaboradores para el autocompletado
+    cur.execute("SELECT NOMBRE FROM colaboradores ORDER BY NOMBRE")
+    colaboradores = [row[0] for row in cur.fetchall()]
     # Crear
     if request.method == 'POST':
         nombre = request.form.get('nombre')
@@ -652,8 +661,13 @@ def crud_celulares():
         area = request.form.get('area')
         departamento = request.form.get('departamento')
         if nombre and celular and area and departamento:
-            cur.execute("INSERT INTO celulares (NOMBRE, CELULAR, AREA, DEPARTAMENTO) VALUES (%s, %s, %s, %s)", (nombre, celular, area, departamento))
-            mysql.connection.commit()
+            try:
+                cur.execute("INSERT INTO celulares (NOMBRE, CELULAR, AREA, DEPARTAMENTO) VALUES (%s, %s, %s, %s)", (nombre, celular, area, departamento))
+                mysql.connection.commit()
+                flash('Celular agregado correctamente.', 'success')
+            except Exception as e:
+                mysql.connection.rollback()
+                flash('Error al agregar celular: ' + str(e), 'danger')
     # Leer
     cur.execute("""
         SELECT c.ID_CELULARES, c.NOMBRE, c.CELULAR, a.AREA, d.DEPARTAMENTO, c.AREA, c.DEPARTAMENTO
@@ -664,7 +678,7 @@ def crud_celulares():
     """)
     celulares = cur.fetchall()
     cur.close()
-    return render_template('Celulares/CRUD_Celulares.html', celulares=celulares, areas=areas, departamentos=departamentos)
+    return render_template('Celulares/CRUD_Celulares.html', celulares=celulares, areas=areas, departamentos=departamentos, colaboradores=colaboradores)
 
 # Editar celular
 @app.route('/celulares/editar/<int:id>', methods=['POST'])
@@ -704,6 +718,9 @@ def crud_correos():
     areas = cur.fetchall()
     cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
     departamentos = cur.fetchall()
+    # Obtener colaboradores para el autocompletado
+    cur.execute("SELECT NOMBRE FROM colaboradores ORDER BY NOMBRE")
+    colaboradores = [row[0] for row in cur.fetchall()]
     # Crear
     if request.method == 'POST':
         nombre = request.form.get('nombre')
@@ -711,8 +728,13 @@ def crud_correos():
         area = request.form.get('area')
         departamento = request.form.get('departamento')
         if nombre and correo and area and departamento:
-            cur.execute("INSERT INTO correos (NOMBRE, CORREO, AREA, DEPARTAMENTO) VALUES (%s, %s, %s, %s)", (nombre, correo, area, departamento))
-            mysql.connection.commit()
+            try:
+                cur.execute("INSERT INTO correos (NOMBRE, CORREO, AREA, DEPARTAMENTO) VALUES (%s, %s, %s, %s)", (nombre, correo, area, departamento))
+                mysql.connection.commit()
+                flash('Correo agregado correctamente.', 'success')
+            except Exception as e:
+                mysql.connection.rollback()
+                flash('Error al agregar correo: ' + str(e), 'danger')
     # Leer
     cur.execute("""
         SELECT c.ID_CORREOS, c.NOMBRE, c.CORREO, a.AREA, d.DEPARTAMENTO, c.AREA, c.DEPARTAMENTO
@@ -723,7 +745,7 @@ def crud_correos():
     """)
     correos = cur.fetchall()
     cur.close()
-    return render_template('Correos/CRUD_Correos.html', correos=correos, areas=areas, departamentos=departamentos)
+    return render_template('Correos/CRUD_Correos.html', correos=correos, areas=areas, departamentos=departamentos, colaboradores=colaboradores)
 
 # Editar correo
 @app.route('/correos/editar/<int:id>', methods=['POST'])
