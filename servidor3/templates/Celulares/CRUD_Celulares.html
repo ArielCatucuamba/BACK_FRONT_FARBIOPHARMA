@@ -157,6 +157,45 @@
 										<option value="{{ nombre }}">{{ nombre }}</option>
 									{% endfor %}
 								</datalist>
+								<script>
+								// Filtrado dinámico de datalist por coincidencia parcial para el campo Nombre
+								document.addEventListener('DOMContentLoaded', function() {
+									var input = document.getElementById('nuevoNombre');
+									var datalist = document.getElementById('listaColaboradores');
+									var allOptions = Array.from(datalist.options).map(opt => opt.value);
+									function renderOptions(val) {
+										datalist.innerHTML = '';
+										if (!val) {
+											allOptions.forEach(function(nombre) {
+												var opt = document.createElement('option');
+												opt.value = nombre;
+												datalist.appendChild(opt);
+											});
+										} else {
+											allOptions.forEach(function(nombre) {
+												if (nombre.toLowerCase().includes(val)) {
+													var opt = document.createElement('option');
+													opt.value = nombre;
+													datalist.appendChild(opt);
+												}
+											});
+										}
+									}
+									// Inicializar con todas las opciones
+									renderOptions('');
+									input.addEventListener('input', function() {
+										var val = input.value.trim().toLowerCase();
+										renderOptions(val);
+									});
+									// También restaurar si el input queda vacío por otros medios
+									input.addEventListener('change', function() {
+										if (!input.value.trim()) renderOptions('');
+									});
+									input.addEventListener('blur', function() {
+										if (!input.value.trim()) renderOptions('');
+									});
+								});
+								</script>
 							</div>
 							<div class="mb-3">
 								<label for="nuevoCelular" class="form-label">Celular</label>
@@ -166,18 +205,12 @@
 								<label for="nuevaArea" class="form-label">Área</label>
 								<select class="form-select" name="area" id="nuevaArea" required>
 									<option value="">Seleccione un área</option>
-									{% for a in areas %}
-										<option value="{{ a[0] }}">{{ a[1] }}</option>
-									{% endfor %}
 								</select>
 							</div>
 							<div class="mb-3">
 								<label for="nuevoDepartamento" class="form-label">Departamento</label>
 								<select class="form-select" name="departamento" id="nuevoDepartamento" required>
 									<option value="">Seleccione un departamento</option>
-									{% for d in departamentos %}
-										<option value="{{ d[0] }}">{{ d[1] }}</option>
-									{% endfor %}
 								</select>
 							</div>
 						</div>
@@ -263,6 +296,29 @@
 		</table>
 	</div>
 	<script>
+		// Mapeo de colaboradores a área y departamento (relleno desde backend)
+		const colaboradoresInfo = [
+			{% for col in colaboradores_info %}
+			{
+				nombre: "{{ col.nombre|e }}",
+				area: {id: {{ col.area_id }}, nombre: "{{ col.area_nombre|e }}"},
+				departamento: {id: {{ col.departamento_id }}, nombre: "{{ col.departamento_nombre|e }}"}
+			},
+			{% endfor %}
+		];
+
+		document.getElementById('nuevoNombre').addEventListener('input', function() {
+			const nombre = this.value;
+			const col = colaboradoresInfo.find(c => c.nombre === nombre);
+			const areaSelect = document.getElementById('nuevaArea');
+			const depSelect = document.getElementById('nuevoDepartamento');
+			areaSelect.innerHTML = '<option value="">Seleccione un área</option>';
+			depSelect.innerHTML = '<option value="">Seleccione un departamento</option>';
+			if (col) {
+				areaSelect.innerHTML += `<option value="${col.area.id}" selected>${col.area.nombre}</option>`;
+				depSelect.innerHTML += `<option value="${col.departamento.id}" selected>${col.departamento.nombre}</option>`;
+			}
+		});
 		function llenarFormularioEditarDesdeBoton(btn) {
 			var id = btn.getAttribute('data-id');
 			var nombre = btn.getAttribute('data-nombre');

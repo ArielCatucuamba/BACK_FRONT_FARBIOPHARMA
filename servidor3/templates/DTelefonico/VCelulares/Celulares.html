@@ -125,15 +125,14 @@
                 <input type="text" id="filtroCelular" class="form-control shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" placeholder="Filtrar por Celular" onkeyup="filtrarTabla()">
                 <select id="filtroArea" class="form-select shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" onchange="filtrarTabla()">
                     <option value="">Filtrar por Área</option>
-                    {% set areas_unicas = celulares | map(attribute=4) | unique | list %}
+                    {% set areas_unicas = celulares | map(attribute=3) | unique | list %}
                     {% for area in areas_unicas %}
                         {% if area %}<option value="{{ area }}">{{ area }}</option>{% endif %}
                     {% endfor %}
-                    
                 </select>
                 <select id="filtroDepartamento" class="form-select shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" onchange="filtrarTabla()">
                     <option value="">Filtrar por Departamento</option>
-                    {% set deps_unicos = celulares | map(attribute=5) | unique | list %}
+                    {% set deps_unicos = celulares | map(attribute=4) | unique | list %}
                     {% for dep in deps_unicos %}
                         {% if dep %}<option value="{{ dep }}">{{ dep }}</option>{% endif %}
                     {% endfor %}
@@ -155,8 +154,8 @@
                             <tr{% if loop.index0 % 2==0 %} style="background:#f7faff;" {% else %} style="background:#fff;" {% endif %}>
                                 <td class="cel-nombre" style="color:#2d3a4a; border:none; min-width:220px;">{{ cel[1] }}</td>
                                 <td class="cel-celular" style="color:#2d3a4a; border:none; min-width:180px;">{{ cel[2] }}</td>
-                                <td class="cel-area" style="color:#14506b; border:none; font-weight:500; min-width:180px;">{{ cel[4] }}</td>
-                                <td class="cel-departamento" style="color:#14506b; border:none; font-weight:500; min-width:180px;">{{ cel[5] }}</td>
+                                <td class="cel-area" style="color:#14506b; border:none; font-weight:500; min-width:180px;">{{ cel[3] }}</td>
+                                <td class="cel-departamento" style="color:#14506b; border:none; font-weight:500; min-width:180px;">{{ cel[4] }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>

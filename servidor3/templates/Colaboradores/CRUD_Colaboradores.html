@@ -1,3 +1,34 @@
+		<script>
+		// Inyectar cargos_info desde backend correctamente como JS
+		window.cargos_info = {{ cargos_info|tojson|safe }};
+		document.addEventListener('DOMContentLoaded', function() {
+			var inputCargo = document.getElementById('nuevoCargo');
+			var selectArea = document.getElementById('nuevaArea');
+			var selectDep = document.getElementById('nuevoDepartamento');
+			inputCargo.addEventListener('input', function() {
+				var cargoNombre = inputCargo.value.trim().toLowerCase();
+				var cargo = window.cargos_info.find(function(c) {
+					return c.nombre.toLowerCase() === cargoNombre;
+				});
+				if (cargo) {
+					// Seleccionar área
+					for (var i = 0; i < selectArea.options.length; i++) {
+						if (selectArea.options[i].value == cargo.area) {
+							selectArea.selectedIndex = i;
+							break;
+						}
+					}
+					// Seleccionar departamento
+					for (var j = 0; j < selectDep.options.length; j++) {
+						if (selectDep.options[j].value == cargo.departamento) {
+							selectDep.selectedIndex = j;
+							break;
+						}
+					}
+				}
+			});
+		});
+		</script>
 <!DOCTYPE html>
 <html lang="es">
 
@@ -74,6 +105,30 @@
     </nav>
 
 	<div class="container mt-5">
+		<!-- Alerta de éxito al agregar colaborador -->
+		<div id="alertaExito" class="alert alert-success alert-dismissible fade show" role="alert" style="display:none;">
+			Colaborador agregado exitosamente.
+			<button type="button" class="btn-close" onclick="cerrarAlertaExito()" aria-label="Close"></button>
+		</div>
+		<!-- Alerta de error de validación -->
+		<div id="alertaError" class="alert alert-danger alert-dismissible fade show" role="alert" style="display:none;">
+			<span id="textoAlertaError"></span>
+			<button type="button" class="btn-close" onclick="cerrarAlertaError()" aria-label="Close"></button>
+		</div>
+		{% with messages = get_flashed_messages(with_categories=true) %}
+		  {% if messages %}
+		    <div class="container mt-3">
+		      {% for category, message in messages %}
+		        {% if category == 'danger' %}
+		          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+		            {{ message }}
+		            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+		          </div>
+		        {% endif %}
+		      {% endfor %}
+		    </div>
+		  {% endif %}
+		{% endwith %}
 		<div class="d-flex justify-content-between align-items-center mb-3">
 			<a href="/menu" class="btn btn-secondary">&larr; Regresar al menú</a>
 			<div class="ms-3" style="min-width:350px; max-width:500px; width:100%;">
@@ -103,30 +158,32 @@
 							</div>
 							<div class="mb-3">
 								<label for="editarArea" class="form-label">Área</label>
-								<select class="form-select" name="area" id="editarArea" required>
+								<select class="form-select" id="editarArea" required disabled>
 									<option value="">Seleccione un área</option>
 									{% for a in areas %}
 										<option value="{{ a[0] }}">{{ a[1] }}</option>
 									{% endfor %}
 								</select>
+								<input type="hidden" name="area" id="editarAreaHidden">
 							</div>
 							<div class="mb-3">
 								<label for="editarDepartamento" class="form-label">Departamento</label>
-								<select class="form-select" name="departamento" id="editarDepartamento" required>
+								<select class="form-select" id="editarDepartamento" required disabled>
 									<option value="">Seleccione un departamento</option>
 									{% for d in departamentos %}
 										<option value="{{ d[0] }}">{{ d[1] }}</option>
 									{% endfor %}
 								</select>
+								<input type="hidden" name="departamento" id="editarDepartamentoHidden">
 							</div>
 							<div class="mb-3">
 								<label for="editarCargo" class="form-label">Cargo</label>
-								<select class="form-select" name="cargo" id="editarCargo" required>
-									<option value="">Seleccione un cargo</option>
+								<input class="form-control" list="listaCargos" name="cargo" id="editarCargo" required placeholder="Buscar y seleccionar cargo...">
+								<datalist id="listaCargos">
 									{% for c in cargos %}
-										<option value="{{ c[0] }}">{{ c[1] }}</option>
+										<option value="{{ c[1] }}" data-id="{{ c[0] }}"></option>
 									{% endfor %}
-								</select>
+								</datalist>
 							</div>
 							<div class="mb-3">
 								<label for="editarUbicacion" class="form-label">Ubicación</label>
@@ -151,7 +208,67 @@
 		<div class="modal fade" id="modalAgregar" tabindex="-1" aria-labelledby="modalAgregarLabel" aria-hidden="true">
 			<div class="modal-dialog">
 				<div class="modal-content">
-					<form method="POST" action="{{ url_for('crud_colaboradores') }}">
+					<form method="POST" action="{{ url_for('crud_colaboradores') }}" id="formNuevoColaborador">
+<script>
+// Al enviar el formulario, convertir el nombre del cargo en su ID y mostrar alerta de éxito o error
+document.addEventListener('DOMContentLoaded', function() {
+	var form = document.getElementById('formNuevoColaborador');
+	if (form) {
+		form.addEventListener('submit', function(e) {
+			var inputCargo = document.getElementById('nuevoCargo');
+			var cargoNombre = inputCargo.value.trim().toLowerCase();
+			var cargo = (window.cargos_info || []).find(function(c) {
+				return c.nombre.toLowerCase() === cargoNombre;
+			});
+			if (cargo) {
+				inputCargo.value = cargo.id;
+			} else {
+				// Si no se encuentra, limpiar para forzar error de validación en backend
+				inputCargo.value = '';
+			}
+
+			// Validación de nombre: no puede ser solo números
+			var nombre = document.getElementById('nuevoNombre').value.trim();
+			var soloNumeros = /^\d+$/.test(nombre);
+			var area = document.getElementById('nuevaArea').value;
+			var departamento = document.getElementById('nuevoDepartamento').value;
+			var ubicacion = document.getElementById('nuevaUbicacion').value;
+			if (soloNumeros) {
+				e.preventDefault();
+				mostrarAlertaError('El nombre del colaborador no puede ser solo números.');
+				return;
+			}
+			if (nombre && area && departamento && inputCargo.value && ubicacion) {
+				e.preventDefault();
+				cerrarAlertaError();
+				var alerta = document.getElementById('alertaExito');
+				alerta.style.display = '';
+				var modal = bootstrap.Modal.getInstance(document.getElementById('modalAgregar'));
+				if (modal) modal.hide();
+				// Limpiar formulario
+				form.reset();
+				// Restaurar selects deshabilitados
+				document.getElementById('nuevaArea').selectedIndex = 0;
+				document.getElementById('nuevoDepartamento').selectedIndex = 0;
+			}
+		});
+	}
+});
+
+function mostrarAlertaError(mensaje) {
+	var alerta = document.getElementById('alertaError');
+	var texto = document.getElementById('textoAlertaError');
+	texto.textContent = mensaje;
+	alerta.style.display = '';
+	window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function cerrarAlertaError() {
+	document.getElementById('alertaError').style.display = 'none';
+}
+function cerrarAlertaExito() {
+	document.getElementById('alertaExito').style.display = 'none';
+}
+</script>
 						<div class="modal-header">
 							<h5 class="modal-title" id="modalAgregarLabel">Agregar Colaborador</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -163,7 +280,7 @@
 							</div>
 							<div class="mb-3">
 								<label for="nuevaArea" class="form-label">Área</label>
-								<select class="form-select" name="area" id="nuevaArea" required>
+								<select class="form-select" name="area" id="nuevaArea" required disabled>
 									<option value="">Seleccione un área</option>
 									{% for a in areas %}
 										<option value="{{ a[0] }}">{{ a[1] }}</option>
@@ -172,21 +289,99 @@
 							</div>
 							<div class="mb-3">
 								<label for="nuevoDepartamento" class="form-label">Departamento</label>
-								<select class="form-select" name="departamento" id="nuevoDepartamento" required>
+								<select class="form-select" name="departamento" id="nuevoDepartamento" required disabled>
 									<option value="">Seleccione un departamento</option>
 									{% for d in departamentos %}
 										<option value="{{ d[0] }}">{{ d[1] }}</option>
 									{% endfor %}
 								</select>
 							</div>
+		<script>
+		// cargos_info debe ser inyectado desde el backend como un objeto JS
+		// Ejemplo: var cargos_info = [{id: 1, nombre: 'Cargo1', area: 2, departamento: 3}, ...];
+		// Aquí se asume que se inyecta correctamente antes de este script
+		document.addEventListener('DOMContentLoaded', function() {
+			// Para agregar colaborador
+			var inputCargo = document.getElementById('nuevoCargo');
+			var selectArea = document.getElementById('nuevaArea');
+			var selectDep = document.getElementById('nuevoDepartamento');
+			if (typeof cargos_info !== 'undefined' && inputCargo) {
+				inputCargo.addEventListener('input', function() {
+					var cargoNombre = inputCargo.value.trim().toLowerCase();
+					var cargo = cargos_info.find(function(c) {
+						return c.nombre.toLowerCase() === cargoNombre;
+					});
+					if (cargo) {
+						// Seleccionar área
+						for (var i = 0; i < selectArea.options.length; i++) {
+							if (selectArea.options[i].value == cargo.area) {
+								selectArea.selectedIndex = i;
+								break;
+							}
+						}
+						// Seleccionar departamento
+						for (var j = 0; j < selectDep.options.length; j++) {
+							if (selectDep.options[j].value == cargo.departamento) {
+								selectDep.selectedIndex = j;
+								break;
+							}
+						}
+					}
+				});
+			}
+
+			// Para editar colaborador
+			var inputCargoEditar = document.getElementById('editarCargo');
+			var selectAreaEditar = document.getElementById('editarArea');
+			var selectDepEditar = document.getElementById('editarDepartamento');
+			if (typeof cargos_info !== 'undefined' && inputCargoEditar) {
+				function syncHiddenFields() {
+					document.getElementById('editarAreaHidden').value = selectAreaEditar.value;
+					document.getElementById('editarDepartamentoHidden').value = selectDepEditar.value;
+				}
+				inputCargoEditar.addEventListener('input', function() {
+					var cargoNombre = inputCargoEditar.value.trim().toLowerCase();
+					var cargo = cargos_info.find(function(c) {
+						return c.nombre.toLowerCase() === cargoNombre;
+					});
+					if (cargo) {
+						// Seleccionar área
+						for (var i = 0; i < selectAreaEditar.options.length; i++) {
+							if (selectAreaEditar.options[i].value == cargo.area) {
+								selectAreaEditar.selectedIndex = i;
+								break;
+							}
+						}
+						// Seleccionar departamento
+						for (var j = 0; j < selectDepEditar.options.length; j++) {
+							if (selectDepEditar.options[j].value == cargo.departamento) {
+								selectDepEditar.selectedIndex = j;
+								break;
+							}
+						}
+						syncHiddenFields();
+					}
+				});
+				// Sincronizar los campos ocultos al abrir el modal y al cambiar el cargo
+				selectAreaEditar.addEventListener('change', syncHiddenFields);
+				selectDepEditar.addEventListener('change', syncHiddenFields);
+				// Al abrir el modal, sincronizar los campos ocultos
+				document.getElementById('modalEditar').addEventListener('show.bs.modal', function() {
+					syncHiddenFields();
+				});
+				// Al cargar la página, sincronizar los campos ocultos
+				syncHiddenFields();
+			}
+		});
+		</script>
 							<div class="mb-3">
 								<label for="nuevoCargo" class="form-label">Cargo</label>
-								<select class="form-select" name="cargo" id="nuevoCargo" required>
-									<option value="">Seleccione un cargo</option>
+								<input class="form-control" list="listaCargos" name="cargo" id="nuevoCargo" required placeholder="Buscar y seleccionar cargo...">
+								<datalist id="listaCargos">
 									{% for c in cargos %}
-										<option value="{{ c[0] }}">{{ c[1] }}</option>
+										<option value="{{ c[1] }}" data-id="{{ c[0] }}"></option>
 									{% endfor %}
-								</select>
+								</datalist>
 							</div>
 							<div class="mb-3">
 								<label for="nuevaUbicacion" class="form-label">Ubicación</label>
@@ -295,7 +490,15 @@
 			document.getElementById('editarNombre').value = nombre;
 			document.getElementById('editarArea').value = areaId;
 			document.getElementById('editarDepartamento').value = depId;
-			document.getElementById('editarCargo').value = cargoId;
+			// Buscar el nombre del cargo por su id en el datalist
+			var cargoNombre = '';
+			var opciones = document.querySelectorAll('#listaCargos option');
+			opciones.forEach(function(opt) {
+				if(opt.getAttribute('data-id') == cargoId) {
+					cargoNombre = opt.value;
+				}
+			});
+			document.getElementById('editarCargo').value = cargoNombre;
 			document.getElementById('editarUbicacion').value = ubicacionId;
 		}
 		function filtrarPorArea() {

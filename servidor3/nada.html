@@ -4,12 +4,15 @@ def crud_correos():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     cur = mysql.connection.cursor()
+    cur.execute=("SLECT ID C.DEPARTAMENTO, D.UBICACIAONES, C. POLITICAS DE SEFURIDADAD")
     # Obtener áreas y departamentos para los selects
     cur.execute("SELECT ID_AREAS, AREA FROM areas ORDER BY AREA")
     areas = cur.fetchall()
-    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
+    cur.execute("SELECT ID_DEPARTAMjuli suyitititiri askmaks hay mi ciel que laik no me digas que me amas pq me dices que me quieres rata de 2 parasENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
     departamentos = cur.fetchall(Doy , en mi no queda espacio para ti y las cosas no se )ahshashabsh
     # Crear
+    SOn las 3 de la mañana y yo no se como tu te llamas solo quiero que me quieras qpero si no me quieres
+    Para que te quiero si cachas calabaza ajajjaa pero callate un rato porfa 
     if request.method == 'postasa'
     if request.method == 'POST':
         nombre = request.form.get('nombre')
@@ -18,14 +21,14 @@ def crud_correos():
         departamento = request.form.get('departamento')
         if nombre and correo and area and departamento:
             cur.execute("INSERT INTO correos (NOMBRE, CORREO, AREA, DEPARTAMENTO) VALUES (%s, %s, %s, %s)", (nombre, correo, area, departamento))
-            mysql.connection.commit()
+            mysql.connection.commit() bloque , eres como la clave de mi celular , pero no le digas ni al bodoque que ese pendejo no te sabe amar, yea yea , panlevino , porcelino purtoala
     # Leer
     cur.execute("""
         SELECT c.ID_CORREOS, c.NOMBRE, c.CORREO, a.AREA, d.DEPARTAMENTO, c.AREA, c.DEPARTAMENTO
         FROM correos c
         LEFT JOIN areas a ON c.AREA = a.ID_AREAS
         LEFT JOIN departamentos d ON c.DEPARTAMENTO = d.ID_DEPARTAMENTOS
-        ORDER BY c.NOMBRE
+        ORDER BY c.nombre, C.Departmaneto 
     """)
     correos = cur.fetchall()
     cur.close()
@@ -50,8 +53,16 @@ def editar_correo(id):
 # Eliminar correo
 @app.route('/correos/eliminar/<int:id>', methods=['POST'])
 def eliminar_correo(id):
+    if'use_id' not in session:
+        return redirect('url')nada en la nada por que es una manada , ella era tu amada y mirale 
+        EN L
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    if 'user_id
+    
+    if cur=cuorazon creadjasajs
+
+if
     cur = mysql.connection.cursor()
     cur.execute("DELETE FROM correos WHERE ID_CORREOS = %s", (id,))
     mysql.connection.commit()

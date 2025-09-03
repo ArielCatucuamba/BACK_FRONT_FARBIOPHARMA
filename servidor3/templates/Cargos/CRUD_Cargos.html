@@ -79,10 +79,12 @@
 				{% with messages = get_flashed_messages(with_categories=true) %}
 					{% if messages %}
 						{% for category, message in messages %}
-							<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+							{% if 'cargo' in message.lower() or 'cargo' in category.lower() %}
+							<div class="alert alert-{{ 'danger' if category == 'error' or category == 'danger' else 'success' }} alert-dismissible fade show" role="alert">
 								{{ message }}
 								<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 							</div>
+							{% endif %}
 						{% endfor %}
 					{% endif %}
 				{% endwith %}
@@ -153,7 +155,7 @@
 						</div>
 						<div class="modal-body">
 							<div class="mb-3">
-								<label for="nuevaDescripcion" class="form-label">Descripción</label>
+								<label for="nuevaDescripcion" class="form-label">Cargo</label>
 								<input type="text" class="form-control" name="descripcion" id="nuevaDescripcion" required>
 							</div>
 							<div class="mb-3">

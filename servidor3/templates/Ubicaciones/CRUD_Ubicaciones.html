@@ -111,16 +111,21 @@
     </nav>
 
 		<div class="container mt-5">
-				{% with messages = get_flashed_messages(with_categories=true) %}
-					{% if messages %}
-						{% for category, message in messages %}
-							<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-								{{ message }}
-								<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-							</div>
-						{% endfor %}
-					{% endif %}
-				{% endwith %}
+			<!-- Mensaje de error de validación (JS) -->
+			<div id="mensajeError" style="display:none;" class="alert alert-danger alert-dismissible fade show" role="alert">
+				<span id="textoMensajeError"></span>
+				<button type="button" class="btn-close" onclick="cerrarMensajeError()" aria-label="Close"></button>
+			</div>
+			{% with messages = get_flashed_messages(with_categories=true) %}
+				{% if messages %}
+					{% for category, message in messages %}
+						<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+							{{ message }}
+							<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+						</div>
+					{% endfor %}
+				{% endif %}
+			{% endwith %}
 		<div class="d-flex justify-content-between align-items-center mb-3">
 			<a href="/menu" class="btn btn-secondary">&larr; Regresar al menú</a>
 			<div class="ms-3" style="min-width:350px; max-width:500px; width:100%;">
@@ -276,34 +281,75 @@
 		</table>
 	</div>
 	<script>
-		function llenarFormularioEditarDesdeBoton(btn) {
-			var id = btn.getAttribute('data-id');
-			var descripcion = btn.getAttribute('data-descripcion');
-			var geolocalizacion = btn.getAttribute('data-geolocalizacion');
-			var direccion = btn.getAttribute('data-direccion');
-			document.getElementById('formEditar').action = '/ubicaciones/editar/' + id;
-			document.getElementById('editarId').value = id;
-			document.getElementById('editarDescripcion').value = descripcion;
-			document.getElementById('editarGeolocalizacion').value = geolocalizacion;
-			document.getElementById('editarDireccion').value = direccion;
-		}
+	function llenarFormularioEditarDesdeBoton(btn) {
+		var id = btn.getAttribute('data-id');
+		var descripcion = btn.getAttribute('data-descripcion');
+		var geolocalizacion = btn.getAttribute('data-geolocalizacion');
+		var direccion = btn.getAttribute('data-direccion');
+		document.getElementById('formEditar').action = '/ubicaciones/editar/' + id;
+		document.getElementById('editarId').value = id;
+		document.getElementById('editarDescripcion').value = descripcion;
+		document.getElementById('editarGeolocalizacion').value = geolocalizacion;
+		document.getElementById('editarDireccion').value = direccion;
+	}
 
-		function filtrarPorDescripcion() {
-			var select = document.getElementById('filtroDescripcion');
-			var valor = select.value;
-			var tabla = document.getElementById('tablaUbicaciones');
-			var filas = tabla.getElementsByTagName('tr');
-			for (var i = 1; i < filas.length; i++) { // i=1 para saltar el encabezado
-				var celda = filas[i].getElementsByClassName('ubicacion-descripcion')[0];
-				if (celda) {
-					if (valor === "" || celda.textContent.trim() === valor) {
-						filas[i].style.display = '';
-					} else {
-						filas[i].style.display = 'none';
-					}
+	function soloNumeros(texto) {
+		return /^\d+$/.test(texto.trim());
+	}
+
+	function mostrarMensajeError(mensaje) {
+		var div = document.getElementById('mensajeError');
+		var span = document.getElementById('textoMensajeError');
+		span.textContent = mensaje;
+		div.style.display = '';
+		window.scrollTo({ top: 0, behavior: 'smooth' });
+	}
+
+	function cerrarMensajeError() {
+		var div = document.getElementById('mensajeError');
+		div.style.display = 'none';
+	}
+
+	// Validación para el formulario de agregar y editar
+	document.addEventListener('DOMContentLoaded', function() {
+		var formAgregar = document.querySelector('form[action="{{ url_for('ubicaciones') }}"]');
+		if (formAgregar) {
+			formAgregar.addEventListener('submit', function(e) {
+				var direccion = document.getElementById('nuevaDireccion').value;
+				if (soloNumeros(direccion)) {
+					e.preventDefault();
+					mostrarMensajeError('La dirección no puede ser solo números.');
+				}
+			});
+		}
+		var formEditar = document.getElementById('formEditar');
+		if (formEditar) {
+			formEditar.addEventListener('submit', function(e) {
+				var direccion = document.getElementById('editarDireccion').value;
+				if (soloNumeros(direccion)) {
+					e.preventDefault();
+					mostrarMensajeError('La dirección no puede ser solo números.');
+				}
+			});
+		}
+	});
+
+	function filtrarPorDescripcion() {
+		var select = document.getElementById('filtroDescripcion');
+		var valor = select.value;
+		var tabla = document.getElementById('tablaUbicaciones');
+		var filas = tabla.getElementsByTagName('tr');
+		for (var i = 1; i < filas.length; i++) { // i=1 para saltar el encabezado
+			var celda = filas[i].getElementsByClassName('ubicacion-descripcion')[0];
+			if (celda) {
+				if (valor === "" || celda.textContent.trim() === valor) {
+					filas[i].style.display = '';
+				} else {
+					filas[i].style.display = 'none';
 				}
 			}
 		}
+	}
 	</script>
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

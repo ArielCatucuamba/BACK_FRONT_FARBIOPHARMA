@@ -203,6 +203,9 @@ def login():
             return redirect(url_for('menu'))
         else:
             flash('Usuario o contraseña incorrectos', 'error')
+        return render_template('Login/login.html')
+    # Limpiar mensajes flash previos (de otras vistas) al mostrar el login
+    session.pop('_flashes', None)
     return render_template('Login/login.html')
 
 @app.route('/menu')
@@ -218,7 +221,15 @@ def menu():
 def vextensiones():
     
     cur = mysql.connection.cursor()
-    cur.execute("SELECT e.ID_EXTENSIONES, e.NOMBRE, e.EXTENSION, a.AREA, d.DEPARTAMENTO, e.AREA, e.DEPARTAMENTO FROM extensiones e LEFT JOIN areas a ON e.AREA = a.ID_AREAS LEFT JOIN departamentos d ON e.DEPARTAMENTO = d.ID_DEPARTAMENTOS ORDER BY e.NOMBRE")
+    cur.execute("""
+        SELECT e.ID_EXTENSIONES, e.NOMBRE, e.EXTENSION, a.AREA, d.DEPARTAMENTO
+        FROM extensiones e
+        LEFT JOIN colaboradores c ON e.NOMBRE = c.NOMBRE
+        LEFT JOIN cargos cg ON c.CARGO = cg.ID_CARGOS
+        LEFT JOIN areas a ON cg.AREA = a.ID_AREAS
+        LEFT JOIN departamentos d ON cg.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        ORDER BY e.NOMBRE
+    """)
     extensiones = cur.fetchall()
     cur.close()
     return render_template('DTelefonico/VExtensiones/Extensiones.html', extensiones=extensiones)
@@ -228,7 +239,14 @@ def vextensiones():
 def vcelulares():
     
     cur = mysql.connection.cursor()
-    cur.execute("SELECT c.ID_CELULARES, c.NOMBRE, c.CELULAR, a.AREA, d.DEPARTAMENTO, a.AREA, d.DEPARTAMENTO FROM celulares c LEFT JOIN areas a ON c.AREA = a.ID_AREAS LEFT JOIN departamentos d ON c.DEPARTAMENTO = d.ID_DEPARTAMENTOS ORDER BY c.NOMBRE")
+    cur.execute("""
+        SELECT c.ID_CELULARES, c.NOMBRE, c.CELULAR, a.AREA, d.DEPARTAMENTO
+        FROM celulares c
+        LEFT JOIN colaboradores col ON c.NOMBRE = col.NOMBRE
+        LEFT JOIN areas a ON col.AREA = a.ID_AREAS
+        LEFT JOIN departamentos d ON col.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        ORDER BY c.NOMBRE
+    """)
     celulares = cur.fetchall()
     cur.close()
     return render_template('DTelefonico/VCelulares/Celulares.html', celulares=celulares)
@@ -237,7 +255,14 @@ def vcelulares():
 def vcorreos():
     
     cur = mysql.connection.cursor()
-    cur.execute("SELECT c.ID_CORREOS, c.NOMBRE, c.CORREO, a.ID_AREAS, a.AREA, d.DEPARTAMENTO FROM correos c LEFT JOIN areas a ON c.AREA = a.ID_AREAS LEFT JOIN departamentos d ON c.DEPARTAMENTO = d.ID_DEPARTAMENTOS ORDER BY c.NOMBRE")
+    cur.execute("""
+        SELECT c.ID_CORREOS, c.NOMBRE, c.CORREO, a.AREA, d.DEPARTAMENTO
+        FROM correos c
+        LEFT JOIN colaboradores col ON c.NOMBRE = col.NOMBRE
+        LEFT JOIN areas a ON col.AREA = a.ID_AREAS
+        LEFT JOIN departamentos d ON col.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        ORDER BY c.NOMBRE
+    """)
     correos = cur.fetchall()
     cur.close()
     return render_template('DTelefonico/VCorreos/Correos.html', correos=correos)
@@ -308,8 +333,14 @@ def crud_areas():
     if request.method == 'POST':
         area = request.form.get('area')
         if area:
-            cur.execute("INSERT INTO areas (AREA) VALUES (%s)", (area,))
-            mysql.connection.commit()
+            if area.isdigit():
+                flash('El nombre del área no puede ser solo números.', 'danger')
+            else:
+                cur.execute("INSERT INTO areas (AREA) VALUES (%s)", (area,))
+                mysql.connection.commit()
+                flash('Área agregada correctamente.', 'success')
+        else:
+            flash('El campo área es obligatorio.', 'danger')
     # Leer
     cur.execute("SELECT ID_AREAS, AREA FROM areas ORDER BY AREA")
     areas = cur.fetchall()
@@ -322,10 +353,17 @@ def editar_area(id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     area = request.form.get('area')
+    if not area:
+        flash('El campo área es obligatorio.', 'danger')
+        return redirect(url_for('crud_areas'))
+    if area.isdigit():
+        flash('El nombre del área no puede ser solo números.', 'danger')
+        return redirect(url_for('crud_areas'))
     cur = mysql.connection.cursor()
     cur.execute("UPDATE areas SET AREA = %s WHERE ID_AREAS = %s", (area, id))
     mysql.connection.commit()
     cur.close()
+    flash('Área editada correctamente.', 'success')
     return redirect(url_for('crud_areas'))
 
 # Eliminar área
@@ -355,8 +393,14 @@ def departamentos():
     if request.method == 'POST':
         departamento = request.form.get('departamento')
         if departamento:
-            cur.execute("INSERT INTO departamentos (DEPARTAMENTO) VALUES (%s)", (departamento,))
-            mysql.connection.commit()
+            if departamento.isdigit():
+                flash('El nombre del departamento no puede ser solo números.', 'danger')
+            else:
+                cur.execute("INSERT INTO departamentos (DEPARTAMENTO) VALUES (%s)", (departamento,))
+                mysql.connection.commit()
+                flash('Departamento agregado correctamente.', 'success')
+        else:
+            flash('El campo departamento es obligatorio.', 'danger')
     # Leer
     cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
     departamentos = cur.fetchall()
@@ -369,10 +413,17 @@ def editar_departamento(id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     departamento = request.form.get('departamento')
+    if not departamento:
+        flash('El campo departamento es obligatorio.', 'danger')
+        return redirect(url_for('departamentos'))
+    if departamento.isdigit():
+        flash('El nombre del departamento no puede ser solo números.', 'danger')
+        return redirect(url_for('departamentos'))
     cur = mysql.connection.cursor()
     cur.execute("UPDATE departamentos SET DEPARTAMENTO = %s WHERE ID_DEPARTAMENTOS = %s", (departamento, id))
     mysql.connection.commit()
     cur.close()
+    flash('Departamento editado correctamente.', 'success')
     return redirect(url_for('departamentos'))
 
 # Eliminar departamento
@@ -457,9 +508,14 @@ def crud_cargos():
         descripcion = request.form.get('descripcion')
         area = request.form.get('area')
         departamento = request.form.get('departamento')
-        if descripcion and area and departamento:
+        if not descripcion or not area or not departamento:
+            flash('Todos los campos son obligatorios.', 'danger')
+        elif descripcion.isdigit():
+            flash('El nombre del cargo no puede ser solo números.', 'danger')
+        else:
             cur.execute("INSERT INTO cargos (DESCRIPCION, AREA, DEPARTAMENTO) VALUES (%s, %s, %s)", (descripcion, area, departamento))
             mysql.connection.commit()
+            flash('Cargo agregado correctamente.', 'success')
     # Leer
     cur.execute("""
         SELECT c.ID_CARGOS, c.DESCRIPCION, a.AREA, d.DEPARTAMENTO, c.AREA, c.DEPARTAMENTO
@@ -480,10 +536,17 @@ def editar_cargo(id):
     descripcion = request.form.get('descripcion')
     area = request.form.get('area')
     departamento = request.form.get('departamento')
+    if not descripcion or not area or not departamento:
+        flash('Todos los campos son obligatorios.', 'danger')
+        return redirect(url_for('crud_cargos'))
+    if descripcion.isdigit():
+        flash('El nombre del cargo no puede ser solo números.', 'danger')
+        return redirect(url_for('crud_cargos'))
     cur = mysql.connection.cursor()
     cur.execute("UPDATE cargos SET DESCRIPCION = %s, AREA = %s, DEPARTAMENTO = %s WHERE ID_CARGOS = %s", (descripcion, area, departamento, id))
     mysql.connection.commit()
     cur.close()
+    flash('Cargo editado correctamente.', 'success')
     return redirect(url_for('crud_cargos'))
 
 # Eliminar cargo
@@ -513,8 +576,12 @@ def crud_colaboradores():
     areas = cur.fetchall()
     cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
     departamentos = cur.fetchall()
-    cur.execute("SELECT ID_CARGOS, DESCRIPCION FROM cargos ORDER BY DESCRIPCION")
+    cur.execute("SELECT ID_CARGOS, DESCRIPCION, AREA, DEPARTAMENTO FROM cargos ORDER BY DESCRIPCION")
     cargos = cur.fetchall()
+    # Para JS: lista de objetos {id, nombre, area, departamento}
+    cargos_info = [
+        {"id": c[0], "nombre": c[1], "area": c[2], "departamento": c[3]} for c in cargos
+    ]
     cur.execute("SELECT ID_UBICACIONES, DESCRIPCION FROM ubicaciones ORDER BY DESCRIPCION")
     ubicaciones = cur.fetchall()
     # Crear
@@ -524,47 +591,75 @@ def crud_colaboradores():
         area = request.form.get('area')
         cargo = request.form.get('cargo')
         ubicacion = request.form.get('ubicacion')
-        if nombre:
+        if not all([nombre, departamento, area, cargo, ubicacion]):
+            flash('Todos los campos son obligatorios.', 'danger')
+        else:
             try:
                 cur.execute("INSERT INTO colaboradores (NOMBRE, DEPARTAMENTO, AREA, CARGO, UBICACION) VALUES (%s, %s, %s, %s, %s)",
                             (nombre, departamento, area, cargo, ubicacion))
                 mysql.connection.commit()
                 flash('Colaborador agregado exitosamente.', 'success')
             except Exception as e:
+                mysql.connection.rollback()
                 flash('Error al agregar colaborador: ' + str(e), 'danger')
-        else:
-            flash('El campo nombre es obligatorio.', 'danger')
     # Leer
     cur.execute("""
         SELECT col.ID_COLABORADORES, col.NOMBRE,
                d.DEPARTAMENTO, a.AREA, c.DESCRIPCION, u.DESCRIPCION,
-               col.DEPARTAMENTO, col.AREA, col.CARGO, col.UBICACION
+               c.DEPARTAMENTO, c.AREA, col.CARGO, col.UBICACION
         FROM colaboradores col
-        LEFT JOIN departamentos d ON col.DEPARTAMENTO = d.ID_DEPARTAMENTOS
-        LEFT JOIN areas a ON col.AREA = a.ID_AREAS
         LEFT JOIN cargos c ON col.CARGO = c.ID_CARGOS
+        LEFT JOIN areas a ON c.AREA = a.ID_AREAS
+        LEFT JOIN departamentos d ON c.DEPARTAMENTO = d.ID_DEPARTAMENTOS
         LEFT JOIN ubicaciones u ON col.UBICACION = u.ID_UBICACIONES
         ORDER BY col.NOMBRE
     """)
     colaboradores = cur.fetchall()
     cur.close()
-    return render_template('Colaboradores/CRUD_Colaboradores.html', colaboradores=colaboradores, areas=areas, departamentos=departamentos, cargos=cargos, ubicaciones=ubicaciones)
+    return render_template('Colaboradores/CRUD_Colaboradores.html', colaboradores=colaboradores, areas=areas, departamentos=departamentos, cargos=cargos, ubicaciones=ubicaciones, cargos_info=cargos_info)
 
 # Editar colaborador
 @app.route('/crud_colaboradores/editar/<int:id>', methods=['POST'])
 def editar_colaborador(id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    nombres = request.form.get('nombres')
-    apellidos = request.form.get('apellidos')
+    nombre = request.form.get('nombre')
     departamento = request.form.get('departamento')
     area = request.form.get('area')
     cargo = request.form.get('cargo')
     ubicacion = request.form.get('ubicacion')
+
+    # Validaciones básicas
+    if not all([nombre, departamento, area, cargo, ubicacion]):
+        flash('Todos los campos son obligatorios.', 'danger')
+        return redirect(url_for('crud_colaboradores'))
+    # Validar que el nombre no sea solo números
+    if nombre.isdigit():
+        flash('El nombre del colaborador no puede ser solo números.', 'danger')
+        return redirect(url_for('crud_colaboradores'))
+
+    # Si cargo no es un número (ID), buscar el ID por nombre
+    if not cargo.isdigit():
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT ID_CARGOS FROM cargos WHERE DESCRIPCION = %s", (cargo,))
+        cargo_row = cur.fetchone()
+        if cargo_row:
+            cargo = str(cargo_row[0])
+        else:
+            cur.close()
+            flash('El cargo seleccionado no es válido.', 'danger')
+            return redirect(url_for('crud_colaboradores'))
+        cur.close()
+
     cur = mysql.connection.cursor()
-    cur.execute("UPDATE colaboradores SET NOMBRES = %s, APELLIDOS = %s, DEPARTAMENTO = %s, AREA = %s, CARGO = %s, UBICACION = %s WHERE ID_COLABORADORES = %s",
-                (nombres, apellidos, departamento, area, cargo, ubicacion, id))
-    mysql.connection.commit()
+    try:
+        cur.execute("UPDATE colaboradores SET NOMBRE = %s, DEPARTAMENTO = %s, AREA = %s, CARGO = %s, UBICACION = %s WHERE ID_COLABORADORES = %s",
+                    (nombre, departamento, area, cargo, ubicacion, id))
+        mysql.connection.commit()
+        flash('Colaborador editado correctamente.', 'success')
+    except Exception as e:
+        mysql.connection.rollback()
+        flash('Error al editar colaborador: ' + str(e), 'danger')
     cur.close()
     return redirect(url_for('crud_colaboradores'))
 
@@ -590,9 +685,27 @@ def crud_extensiones():
     areas = cur.fetchall()
     cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
     departamentos = cur.fetchall()
-    # Obtener colaboradores para el autocompletado
-    cur.execute("SELECT NOMBRE FROM colaboradores ORDER BY NOMBRE")
-    colaboradores = [row[0] for row in cur.fetchall()]
+    # Obtener colaboradores para el autocompletado y su info de área y departamento
+    cur.execute("""
+        SELECT c.NOMBRE, a.ID_AREAS, a.AREA, d.ID_DEPARTAMENTOS, d.DEPARTAMENTO
+        FROM colaboradores c
+        LEFT JOIN cargos cg ON c.CARGO = cg.ID_CARGOS
+        LEFT JOIN areas a ON cg.AREA = a.ID_AREAS
+        LEFT JOIN departamentos d ON cg.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        ORDER BY c.NOMBRE
+    """)
+    colaboradores_info = []
+    colaboradores = []
+    for row in cur.fetchall():
+        nombre, area_id, area_nombre, dep_id, dep_nombre = row
+        colaboradores.append(nombre)
+        colaboradores_info.append({
+            'nombre': nombre,
+            'area_id': area_id if area_id is not None else '',
+            'area_nombre': area_nombre if area_nombre is not None else '',
+            'departamento_id': dep_id if dep_id is not None else '',
+            'departamento_nombre': dep_nombre if dep_nombre is not None else ''
+        })
     # Crear
     if request.method == 'POST':
         nombre = request.form.get('nombre')
@@ -602,17 +715,19 @@ def crud_extensiones():
         if nombre and extension:
             cur.execute("INSERT INTO extensiones (NOMBRE, EXTENSION, AREA, DEPARTAMENTO) VALUES (%s, %s, %s, %s)", (nombre, extension, area, departamento))
             mysql.connection.commit()
-    # Leer
+    # Leer: mostrar área y departamento actual del colaborador relacionado
     cur.execute("""
-        SELECT e.ID_EXTENSIONES, e.NOMBRE, e.EXTENSION, a.AREA, d.DEPARTAMENTO, e.AREA, e.DEPARTAMENTO
+        SELECT e.ID_EXTENSIONES, e.NOMBRE, e.EXTENSION, a.AREA, d.DEPARTAMENTO, cg.AREA, cg.DEPARTAMENTO
         FROM extensiones e
-        LEFT JOIN areas a ON e.AREA = a.ID_AREAS
-        LEFT JOIN departamentos d ON e.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        LEFT JOIN colaboradores c ON e.NOMBRE = c.NOMBRE
+        LEFT JOIN cargos cg ON c.CARGO = cg.ID_CARGOS
+        LEFT JOIN areas a ON cg.AREA = a.ID_AREAS
+        LEFT JOIN departamentos d ON cg.DEPARTAMENTO = d.ID_DEPARTAMENTOS
         ORDER BY e.NOMBRE
     """)
     extensiones = cur.fetchall()
     cur.close()
-    return render_template('Extensiones/CRUD_Extensiones.html', extensiones=extensiones, areas=areas, departamentos=departamentos, colaboradores=colaboradores)
+    return render_template('Extensiones/CRUD_Extensiones.html', extensiones=extensiones, areas=areas, departamentos=departamentos, colaboradores=colaboradores, colaboradores_info=colaboradores_info)
 
 # Editar extension
 @app.route('/extensiones/editar/<int:id>', methods=['POST'])
@@ -651,9 +766,27 @@ def crud_celulares():
     areas = cur.fetchall()
     cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
     departamentos = cur.fetchall()
-    # Obtener colaboradores para el autocompletado
-    cur.execute("SELECT NOMBRE FROM colaboradores ORDER BY NOMBRE")
-    colaboradores = [row[0] for row in cur.fetchall()]
+    # Obtener colaboradores para el autocompletado y su info de área y departamento
+    cur.execute("""
+        SELECT c.NOMBRE, a.ID_AREAS, a.AREA, d.ID_DEPARTAMENTOS, d.DEPARTAMENTO
+        FROM colaboradores c
+        LEFT JOIN cargos cg ON c.CARGO = cg.ID_CARGOS
+        LEFT JOIN areas a ON cg.AREA = a.ID_AREAS
+        LEFT JOIN departamentos d ON cg.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        ORDER BY c.NOMBRE
+    """)
+    colaboradores_info = []
+    colaboradores = []
+    for row in cur.fetchall():
+        nombre, area_id, area_nombre, dep_id, dep_nombre = row
+        colaboradores.append(nombre)
+        colaboradores_info.append({
+            'nombre': nombre,
+            'area_id': area_id if area_id is not None else '',
+            'area_nombre': area_nombre if area_nombre is not None else '',
+            'departamento_id': dep_id if dep_id is not None else '',
+            'departamento_nombre': dep_nombre if dep_nombre is not None else ''
+        })
     # Crear
     if request.method == 'POST':
         nombre = request.form.get('nombre')
@@ -668,17 +801,19 @@ def crud_celulares():
             except Exception as e:
                 mysql.connection.rollback()
                 flash('Error al agregar celular: ' + str(e), 'danger')
-    # Leer
+    # Leer: mostrar área y departamento actual del colaborador relacionado
     cur.execute("""
-        SELECT c.ID_CELULARES, c.NOMBRE, c.CELULAR, a.AREA, d.DEPARTAMENTO, c.AREA, c.DEPARTAMENTO
+        SELECT c.ID_CELULARES, c.NOMBRE, c.CELULAR, a.AREA, d.DEPARTAMENTO, cg.AREA, cg.DEPARTAMENTO
         FROM celulares c
-        LEFT JOIN areas a ON c.AREA = a.ID_AREAS
-        LEFT JOIN departamentos d ON c.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        LEFT JOIN colaboradores col ON c.NOMBRE = col.NOMBRE
+        LEFT JOIN cargos cg ON col.CARGO = cg.ID_CARGOS
+        LEFT JOIN areas a ON cg.AREA = a.ID_AREAS
+        LEFT JOIN departamentos d ON cg.DEPARTAMENTO = d.ID_DEPARTAMENTOS
         ORDER BY c.NOMBRE
     """)
     celulares = cur.fetchall()
     cur.close()
-    return render_template('Celulares/CRUD_Celulares.html', celulares=celulares, areas=areas, departamentos=departamentos, colaboradores=colaboradores)
+    return render_template('Celulares/CRUD_Celulares.html', celulares=celulares, areas=areas, departamentos=departamentos, colaboradores=colaboradores, colaboradores_info=colaboradores_info)
 
 # Editar celular
 @app.route('/celulares/editar/<int:id>', methods=['POST'])
@@ -718,9 +853,27 @@ def crud_correos():
     areas = cur.fetchall()
     cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM departamentos ORDER BY DEPARTAMENTO")
     departamentos = cur.fetchall()
-    # Obtener colaboradores para el autocompletado
-    cur.execute("SELECT NOMBRE FROM colaboradores ORDER BY NOMBRE")
-    colaboradores = [row[0] for row in cur.fetchall()]
+    # Obtener colaboradores para el autocompletado y su info de área y departamento
+    cur.execute("""
+        SELECT c.NOMBRE, a.ID_AREAS, a.AREA, d.ID_DEPARTAMENTOS, d.DEPARTAMENTO
+        FROM colaboradores c
+        LEFT JOIN cargos cg ON c.CARGO = cg.ID_CARGOS
+        LEFT JOIN areas a ON cg.AREA = a.ID_AREAS
+        LEFT JOIN departamentos d ON cg.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        ORDER BY c.NOMBRE
+    """)
+    colaboradores_info = []
+    colaboradores = []
+    for row in cur.fetchall():
+        nombre, area_id, area_nombre, dep_id, dep_nombre = row
+        colaboradores.append(nombre)
+        colaboradores_info.append({
+            'nombre': nombre,
+            'area_id': area_id if area_id is not None else '',
+            'area_nombre': area_nombre if area_nombre is not None else '',
+            'departamento_id': dep_id if dep_id is not None else '',
+            'departamento_nombre': dep_nombre if dep_nombre is not None else ''
+        })
     # Crear
     if request.method == 'POST':
         nombre = request.form.get('nombre')
@@ -735,17 +888,19 @@ def crud_correos():
             except Exception as e:
                 mysql.connection.rollback()
                 flash('Error al agregar correo: ' + str(e), 'danger')
-    # Leer
+    # Leer: mostrar área y departamento actual del cargo del colaborador relacionado
     cur.execute("""
-        SELECT c.ID_CORREOS, c.NOMBRE, c.CORREO, a.AREA, d.DEPARTAMENTO, c.AREA, c.DEPARTAMENTO
+        SELECT c.ID_CORREOS, c.NOMBRE, c.CORREO, a.AREA, d.DEPARTAMENTO
         FROM correos c
-        LEFT JOIN areas a ON c.AREA = a.ID_AREAS
-        LEFT JOIN departamentos d ON c.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        LEFT JOIN colaboradores col ON c.NOMBRE = col.NOMBRE
+        LEFT JOIN cargos cg ON col.CARGO = cg.ID_CARGOS
+        LEFT JOIN areas a ON cg.AREA = a.ID_AREAS
+        LEFT JOIN departamentos d ON cg.DEPARTAMENTO = d.ID_DEPARTAMENTOS
         ORDER BY c.NOMBRE
     """)
     correos = cur.fetchall()
     cur.close()
-    return render_template('Correos/CRUD_Correos.html', correos=correos, areas=areas, departamentos=departamentos, colaboradores=colaboradores)
+    return render_template('Correos/CRUD_Correos.html', correos=correos, areas=areas, departamentos=departamentos, colaboradores=colaboradores, colaboradores_info=colaboradores_info)
 
 # Editar correo
 @app.route('/correos/editar/<int:id>', methods=['POST'])
