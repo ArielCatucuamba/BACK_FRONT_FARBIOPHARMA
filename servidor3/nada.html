@@ -28,6 +28,7 @@ def crud_correos():
         FROM correos c
         LEFT JOIN areas a ON c.AREA = a.ID_AREAS
         LEFT JOIN departamentos d ON c.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        LEFT JOIN UBICACIONES. NOMBRE C.DEPARTAMENTO 
         ORDER BY c.nombre, C.Departmaneto 
     """)
     correos = cur.fetchall()

@@ -1,4 +1,4 @@
-		<script>
+<script>
 		// Inyectar cargos_info desde backend correctamente como JS
 		window.cargos_info = {{ cargos_info|tojson|safe }};
 		document.addEventListener('DOMContentLoaded', function() {
@@ -210,63 +210,51 @@
 				<div class="modal-content">
 					<form method="POST" action="{{ url_for('crud_colaboradores') }}" id="formNuevoColaborador">
 <script>
-// Al enviar el formulario, convertir el nombre del cargo en su ID y mostrar alerta de éxito o error
-document.addEventListener('DOMContentLoaded', function() {
-	var form = document.getElementById('formNuevoColaborador');
-	if (form) {
-		form.addEventListener('submit', function(e) {
-			var inputCargo = document.getElementById('nuevoCargo');
-			var cargoNombre = inputCargo.value.trim().toLowerCase();
-			var cargo = (window.cargos_info || []).find(function(c) {
-				return c.nombre.toLowerCase() === cargoNombre;
-			});
-			if (cargo) {
-				inputCargo.value = cargo.id;
-			} else {
-				// Si no se encuentra, limpiar para forzar error de validación en backend
-				inputCargo.value = '';
-			}
+// Al enviar el formulario, convertir el nombre del cargo en su ID y mostrar alerta de error si el nombre es solo números
+// El backend se encargará de mostrar el mensaje de éxito y recargar la tabla
+// Eliminar la lógica de mostrar mensaje de éxito y resetear el formulario desde JS
 
-			// Validación de nombre: no puede ser solo números
-			var nombre = document.getElementById('nuevoNombre').value.trim();
-			var soloNumeros = /^\d+$/.test(nombre);
-			var area = document.getElementById('nuevaArea').value;
-			var departamento = document.getElementById('nuevoDepartamento').value;
-			var ubicacion = document.getElementById('nuevaUbicacion').value;
-			if (soloNumeros) {
-				e.preventDefault();
-				mostrarAlertaError('El nombre del colaborador no puede ser solo números.');
-				return;
-			}
-			if (nombre && area && departamento && inputCargo.value && ubicacion) {
-				e.preventDefault();
-				cerrarAlertaError();
-				var alerta = document.getElementById('alertaExito');
-				alerta.style.display = '';
-				var modal = bootstrap.Modal.getInstance(document.getElementById('modalAgregar'));
-				if (modal) modal.hide();
-				// Limpiar formulario
-				form.reset();
-				// Restaurar selects deshabilitados
-				document.getElementById('nuevaArea').selectedIndex = 0;
-				document.getElementById('nuevoDepartamento').selectedIndex = 0;
-			}
-		});
-	}
+document.addEventListener('DOMContentLoaded', function() {
+    var form = document.getElementById('formNuevoColaborador');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            var inputCargo = document.getElementById('nuevoCargo');
+            var cargoNombre = inputCargo.value.trim().toLowerCase();
+            var cargo = (window.cargos_info || []).find(function(c) {
+                return c.nombre.toLowerCase() === cargoNombre;
+            });
+            if (cargo) {
+                inputCargo.value = cargo.id;
+            } else {
+                // Si no se encuentra, limpiar para forzar error de validación en backend
+                inputCargo.value = '';
+            }
+
+            // Validación de nombre: no puede ser solo números
+            var nombre = document.getElementById('nuevoNombre').value.trim();
+            var soloNumeros = /^\d+$/.test(nombre);
+            if (soloNumeros) {
+                e.preventDefault();
+                mostrarAlertaError('El nombre del colaborador no puede ser solo números.');
+                return;
+            }
+            // El resto de validaciones y mensajes los maneja el backend
+        });
+    }
 });
 
 function mostrarAlertaError(mensaje) {
-	var alerta = document.getElementById('alertaError');
-	var texto = document.getElementById('textoAlertaError');
-	texto.textContent = mensaje;
-	alerta.style.display = '';
-	window.scrollTo({ top: 0, behavior: 'smooth' });
+    var alerta = document.getElementById('alertaError');
+    var texto = document.getElementById('textoAlertaError');
+    texto.textContent = mensaje;
+    alerta.style.display = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function cerrarAlertaError() {
-	document.getElementById('alertaError').style.display = 'none';
+    document.getElementById('alertaError').style.display = 'none';
 }
 function cerrarAlertaExito() {
-	document.getElementById('alertaExito').style.display = 'none';
+    document.getElementById('alertaExito').style.display = 'none';
 }
 </script>
 						<div class="modal-header">
@@ -280,21 +268,23 @@ function cerrarAlertaExito() {
 							</div>
 							<div class="mb-3">
 								<label for="nuevaArea" class="form-label">Área</label>
-								<select class="form-select" name="area" id="nuevaArea" required disabled>
+								<select class="form-select" name="area_disabled" id="nuevaArea" required disabled>
 									<option value="">Seleccione un área</option>
 									{% for a in areas %}
 										<option value="{{ a[0] }}">{{ a[1] }}</option>
 									{% endfor %}
 								</select>
+								<input type="hidden" name="area" id="nuevaAreaHidden">
 							</div>
 							<div class="mb-3">
 								<label for="nuevoDepartamento" class="form-label">Departamento</label>
-								<select class="form-select" name="departamento" id="nuevoDepartamento" required disabled>
+								<select class="form-select" name="departamento_disabled" id="nuevoDepartamento" required disabled>
 									<option value="">Seleccione un departamento</option>
 									{% for d in departamentos %}
 										<option value="{{ d[0] }}">{{ d[1] }}</option>
 									{% endfor %}
 								</select>
+								<input type="hidden" name="departamento" id="nuevoDepartamentoHidden">
 							</div>
 		<script>
 		// cargos_info debe ser inyectado desde el backend como un objeto JS
@@ -305,7 +295,15 @@ function cerrarAlertaExito() {
 			var inputCargo = document.getElementById('nuevoCargo');
 			var selectArea = document.getElementById('nuevaArea');
 			var selectDep = document.getElementById('nuevoDepartamento');
-			if (typeof cargos_info !== 'undefined' && inputCargo) {
+			var areaHidden = document.getElementById('nuevaAreaHidden');
+			var depHidden = document.getElementById('nuevoDepartamentoHidden');
+			function syncHiddenFields() {
+				areaHidden.value = selectArea.value;
+				depHidden.value = selectDep.value;
+			}
+			// Sincronizar al cambiar cargo
+			var inputCargo = document.getElementById('nuevoCargo');
+			if (inputCargo) {
 				inputCargo.addEventListener('input', function() {
 					var cargoNombre = inputCargo.value.trim().toLowerCase();
 					var cargo = cargos_info.find(function(c) {
@@ -326,51 +324,21 @@ function cerrarAlertaExito() {
 								break;
 							}
 						}
-					}
-				});
-			}
-
-			// Para editar colaborador
-			var inputCargoEditar = document.getElementById('editarCargo');
-			var selectAreaEditar = document.getElementById('editarArea');
-			var selectDepEditar = document.getElementById('editarDepartamento');
-			if (typeof cargos_info !== 'undefined' && inputCargoEditar) {
-				function syncHiddenFields() {
-					document.getElementById('editarAreaHidden').value = selectAreaEditar.value;
-					document.getElementById('editarDepartamentoHidden').value = selectDepEditar.value;
-				}
-				inputCargoEditar.addEventListener('input', function() {
-					var cargoNombre = inputCargoEditar.value.trim().toLowerCase();
-					var cargo = cargos_info.find(function(c) {
-						return c.nombre.toLowerCase() === cargoNombre;
-					});
-					if (cargo) {
-						// Seleccionar área
-						for (var i = 0; i < selectAreaEditar.options.length; i++) {
-							if (selectAreaEditar.options[i].value == cargo.area) {
-								selectAreaEditar.selectedIndex = i;
-								break;
-							}
-						}
-						// Seleccionar departamento
-						for (var j = 0; j < selectDepEditar.options.length; j++) {
-							if (selectDepEditar.options[j].value == cargo.departamento) {
-								selectDepEditar.selectedIndex = j;
-								break;
-							}
-						}
 						syncHiddenFields();
 					}
 				});
-				// Sincronizar los campos ocultos al abrir el modal y al cambiar el cargo
-				selectAreaEditar.addEventListener('change', syncHiddenFields);
-				selectDepEditar.addEventListener('change', syncHiddenFields);
-				// Al abrir el modal, sincronizar los campos ocultos
-				document.getElementById('modalEditar').addEventListener('show.bs.modal', function() {
+			}
+			// Sincronizar al abrir el modal
+			var modalAgregar = document.getElementById('modalAgregar');
+			if (modalAgregar) {
+				modalAgregar.addEventListener('show.bs.modal', syncHiddenFields);
+			}
+			// Sincronizar SIEMPRE justo antes de enviar el formulario
+			var form = document.getElementById('formNuevoColaborador');
+			if (form) {
+				form.addEventListener('submit', function(e) {
 					syncHiddenFields();
-				});
-				// Al cargar la página, sincronizar los campos ocultos
-				syncHiddenFields();
+				}, true); // true para que se ejecute antes de otros listeners
 			}
 		});
 		</script>
@@ -518,6 +486,61 @@ function cerrarAlertaExito() {
 			}
 		}
 	</script>
+<script>
+// --- Lógica para autocompletar área y departamento en el modal de edición ---
+document.addEventListener('DOMContentLoaded', function() {
+	var inputCargoEdit = document.getElementById('editarCargo');
+	var selectAreaEdit = document.getElementById('editarArea');
+	var selectDepEdit = document.getElementById('editarDepartamento');
+	var areaHiddenEdit = document.getElementById('editarAreaHidden');
+	var depHiddenEdit = document.getElementById('editarDepartamentoHidden');
+
+	function syncHiddenFieldsEdit() {
+		if (areaHiddenEdit && selectAreaEdit) areaHiddenEdit.value = selectAreaEdit.value;
+		if (depHiddenEdit && selectDepEdit) depHiddenEdit.value = selectDepEdit.value;
+	}
+
+	if (inputCargoEdit) {
+		inputCargoEdit.addEventListener('input', function() {
+			var cargoNombre = inputCargoEdit.value.trim().toLowerCase();
+			var cargo = (window.cargos_info || []).find(function(c) {
+				return c.nombre.toLowerCase() === cargoNombre;
+			});
+			if (cargo) {
+				// Seleccionar área
+				for (var i = 0; i < selectAreaEdit.options.length; i++) {
+					if (selectAreaEdit.options[i].value == cargo.area) {
+						selectAreaEdit.selectedIndex = i;
+						break;
+					}
+				}
+				// Seleccionar departamento
+				for (var j = 0; j < selectDepEdit.options.length; j++) {
+					if (selectDepEdit.options[j].value == cargo.departamento) {
+						selectDepEdit.selectedIndex = j;
+						break;
+					}
+				}
+				syncHiddenFieldsEdit();
+			}
+		});
+	}
+	// Sincronizar campos ocultos al abrir el modal de edición
+	var modalEditar = document.getElementById('modalEditar');
+	if (modalEditar) {
+		modalEditar.addEventListener('show.bs.modal', function() {
+			syncHiddenFieldsEdit();
+		});
+	}
+	// Sincronizar SIEMPRE justo antes de enviar el formulario de edición
+	var formEdit = document.getElementById('formEditar');
+	if (formEdit) {
+		formEdit.addEventListener('submit', function(e) {
+			syncHiddenFieldsEdit();
+		}, true);
+	}
+});
+</script>
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

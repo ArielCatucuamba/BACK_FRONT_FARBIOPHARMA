@@ -60,6 +60,124 @@
 			max-width: 300px;
 		}
 	</style>
+	<script>
+	// Mapeo de colaboradores a área y departamento (relleno desde backend)
+	const colaboradoresInfo = [
+		{% for col in colaboradores_info %}
+		{
+			nombre: "{{ col.nombre|e }}",
+			area: {id: "{{ col.area_id if col.area_id != '' else 'null' }}", nombre: "{{ col.area_nombre|e }}"},
+			departamento: {id: "{{ col.departamento_id if col.departamento_id != '' else 'null' }}", nombre: "{{ col.departamento_nombre|e }}"}
+		}{% if not loop.last %},{% endif %}
+		{% endfor %}
+	];
+	document.addEventListener('DOMContentLoaded', function() {
+		var input = document.getElementById('nuevoNombre');
+		var datalist = document.getElementById('listaColaboradores');
+		var allOptions = Array.from(datalist.options).map(opt => opt.value);
+		function renderOptions(val) {
+			datalist.innerHTML = '';
+			if (!val) {
+				allOptions.forEach(function(nombre) {
+					var opt = document.createElement('option');
+					opt.value = nombre;
+					datalist.appendChild(opt);
+				});
+			} else {
+				allOptions.forEach(function(nombre) {
+					if (nombre.toLowerCase().includes(val)) {
+						var opt = document.createElement('option');
+						opt.value = nombre;
+						datalist.appendChild(opt);
+					}
+				});
+			}
+		}
+		// Inicializar con todas las opciones
+		renderOptions('');
+		input.addEventListener('input', function() {
+			var val = input.value.trim().toLowerCase();
+			renderOptions(val);
+		});
+		// También restaurar si el input queda vacío por otros medios
+		input.addEventListener('change', function() {
+			if (!input.value.trim()) renderOptions('');
+		});
+		input.addEventListener('blur', function() {
+			if (!input.value.trim()) renderOptions('');
+		});
+
+		// Autocompletado de área y departamento
+		var areaSelect = document.getElementById('nuevaArea');
+		var depSelect = document.getElementById('nuevoDepartamento');
+		var areaHidden = document.getElementById('nuevaAreaHidden');
+		var depHidden = document.getElementById('nuevoDepartamentoHidden');
+		function syncHiddenFields() {
+			areaHidden.value = areaSelect.value;
+			depHidden.value = depSelect.value;
+		}
+		if (input && areaSelect && depSelect && areaHidden && depHidden) {
+			input.addEventListener('input', function() {
+				const nombre = this.value;
+				const col = colaboradoresInfo.find(c => c.nombre === nombre);
+				areaSelect.innerHTML = '<option value="">Seleccione un área</option>';
+				depSelect.innerHTML = '<option value="">Seleccione un departamento</option>';
+				if (col) {
+					areaSelect.innerHTML += `<option value="${col.area.id}" selected>${col.area.nombre}</option>`;
+					depSelect.innerHTML += `<option value="${col.departamento.id}" selected>${col.departamento.nombre}</option>`;
+				}
+				syncHiddenFields();
+			});
+			// Al cargar la página, sincronizar los campos ocultos
+			syncHiddenFields();
+		}
+		// Sincronizar también al abrir el modal por si acaso
+		var modalAgregar = document.getElementById('modalAgregar');
+		if (modalAgregar) {
+			modalAgregar.addEventListener('show.bs.modal', syncHiddenFields);
+		}
+	});
+	</script>
+<script>
+// --- Lógica para autocompletar y sincronizar área y departamento en el modal de edición de extensión ---
+document.addEventListener('DOMContentLoaded', function() {
+	var inputNombreEdit = document.getElementById('editarNombre');
+	var selectAreaEdit = document.getElementById('editarArea');
+	var selectDepEdit = document.getElementById('editarDepartamento');
+	var areaHiddenEdit = document.getElementById('editarAreaHidden');
+	var depHiddenEdit = document.getElementById('editarDepartamentoHidden');
+	function syncHiddenFieldsEdit() {
+		if (areaHiddenEdit && selectAreaEdit) areaHiddenEdit.value = selectAreaEdit.value;
+		if (depHiddenEdit && selectDepEdit) depHiddenEdit.value = selectDepEdit.value;
+	}
+	if (inputNombreEdit && selectAreaEdit && selectDepEdit && areaHiddenEdit && depHiddenEdit && Array.isArray(window.colaboradoresInfo || colaboradoresInfo)) {
+		inputNombreEdit.addEventListener('input', function() {
+			var nombre = inputNombreEdit.value;
+			var col = (window.colaboradoresInfo || colaboradoresInfo).find(function(c) { return c.nombre === nombre; });
+			// Limpiar selects
+			selectAreaEdit.innerHTML = '<option value="">Seleccione un área</option>';
+			selectDepEdit.innerHTML = '<option value="">Seleccione un departamento</option>';
+			if (col) {
+				selectAreaEdit.innerHTML += `<option value="${col.area.id}" selected>${col.area.nombre}</option>`;
+				selectDepEdit.innerHTML += `<option value="${col.departamento.id}" selected>${col.departamento.nombre}</option>`;
+			}
+			syncHiddenFieldsEdit();
+		});
+		// Sincronizar campos ocultos al abrir el modal de edición
+		var modalEditar = document.getElementById('modalEditar');
+		if (modalEditar) {
+			modalEditar.addEventListener('show.bs.modal', syncHiddenFieldsEdit);
+		}
+		// Sincronizar SIEMPRE justo antes de enviar el formulario de edición
+		var formEdit = document.getElementById('formEditar');
+		if (formEdit) {
+			formEdit.addEventListener('submit', function(e) {
+				syncHiddenFieldsEdit();
+			}, true);
+		}
+	}
+});
+</script>
 </head>
 
 <body>
@@ -99,7 +217,12 @@
 							<input type="hidden" name="id" id="editarId">
 							<div class="mb-3">
 								<label for="editarNombre" class="form-label">Nombre</label>
-								<input type="text" class="form-control" name="nombre" id="editarNombre" required>
+								<input list="listaColaboradores" class="form-control" name="nombre" id="editarNombre" required autocomplete="off" placeholder="Buscar y seleccionar colaborador...">
+								<datalist id="listaColaboradores">
+									{% for nombre in colaboradores %}
+										<option value="{{ nombre }}">{{ nombre }}</option>
+									{% endfor %}
+								</datalist>
 							</div>
 							<div class="mb-3">
 								<label for="editarExtension" class="form-label">Extensión</label>
@@ -107,21 +230,23 @@
 							</div>
 							<div class="mb-3">
 								<label for="editarArea" class="form-label">Área</label>
-								<select class="form-select" name="area" id="editarArea" required>
+								<select class="form-select" id="editarArea" required disabled>
 									<option value="">Seleccione un área</option>
 									{% for a in areas %}
 										<option value="{{ a[0] }}">{{ a[1] }}</option>
 									{% endfor %}
 								</select>
+								<input type="hidden" name="area" id="editarAreaHidden">
 							</div>
 							<div class="mb-3">
 								<label for="editarDepartamento" class="form-label">Departamento</label>
-								<select class="form-select" name="departamento" id="editarDepartamento" required>
+								<select class="form-select" id="editarDepartamento" required disabled>
 									<option value="">Seleccione un departamento</option>
 									{% for d in departamentos %}
 										<option value="{{ d[0] }}">{{ d[1] }}</option>
 									{% endfor %}
 								</select>
+								<input type="hidden" name="departamento" id="editarDepartamentoHidden">
 							</div>
 						</div>
 						<div class="modal-footer">
@@ -145,7 +270,12 @@
 						<div class="modal-body">
 							<div class="mb-3">
 								<label for="nuevoNombre" class="form-label">Nombre</label>
-								<input type="text" class="form-control" name="nombre" id="nuevoNombre" required>
+								<input list="listaColaboradores" class="form-control" name="nombre" id="nuevoNombre" required autocomplete="off" placeholder="Buscar y seleccionar colaborador...">
+								<datalist id="listaColaboradores">
+									{% for nombre in colaboradores %}
+										<option value="{{ nombre }}">{{ nombre }}</option>
+									{% endfor %}
+								</datalist>
 							</div>
 							<div class="mb-3">
 								<label for="nuevaExtension" class="form-label">Extensión</label>
@@ -153,21 +283,23 @@
 							</div>
 							<div class="mb-3">
 								<label for="nuevaArea" class="form-label">Área</label>
-								<select class="form-select" name="area" id="nuevaArea" required>
+								<select class="form-select" id="nuevaArea" required disabled>
 									<option value="">Seleccione un área</option>
 									{% for a in areas %}
 										<option value="{{ a[0] }}">{{ a[1] }}</option>
 									{% endfor %}
 								</select>
+								<input type="hidden" name="area" id="nuevaAreaHidden">
 							</div>
 							<div class="mb-3">
 								<label for="nuevoDepartamento" class="form-label">Departamento</label>
-								<select class="form-select" name="departamento" id="nuevoDepartamento" required>
+								<select class="form-select" id="nuevoDepartamento" required disabled>
 									<option value="">Seleccione un departamento</option>
 									{% for d in departamentos %}
 										<option value="{{ d[0] }}">{{ d[1] }}</option>
 									{% endfor %}
 								</select>
+								<input type="hidden" name="departamento" id="nuevoDepartamentoHidden">
 							</div>
 						</div>
 						<div class="modal-footer">
