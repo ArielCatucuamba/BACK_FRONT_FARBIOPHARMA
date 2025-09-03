@@ -64,80 +64,59 @@
 	// Mapeo de colaboradores a área y departamento (relleno desde backend)
 	const colaboradoresInfo = [
 		{% for col in colaboradores_info %}
-		{
-			nombre: "{{ col.nombre|e }}",
-			area: {id: "{{ col.area_id if col.area_id != '' else 'null' }}", nombre: "{{ col.area_nombre|e }}"},
-			departamento: {id: "{{ col.departamento_id if col.departamento_id != '' else 'null' }}", nombre: "{{ col.departamento_nombre|e }}"}
-		}{% if not loop.last %},{% endif %}
+		   {
+			   id: "{{ col.id }}",
+			   nombre: "{{ col.nombre|e }}",
+			   area: {id: "{{ col.area_id if col.area_id != '' else 'null' }}", nombre: "{{ col.area_nombre|e }}"},
+			   departamento: {id: "{{ col.departamento_id if col.departamento_id != '' else 'null' }}", nombre: "{{ col.departamento_nombre|e }}"}
+		   }{% if not loop.last %},{% endif %}
 		{% endfor %}
 	];
 	document.addEventListener('DOMContentLoaded', function() {
-		var input = document.getElementById('nuevoNombre');
-		var datalist = document.getElementById('listaColaboradores');
-		var allOptions = Array.from(datalist.options).map(opt => opt.value);
-		function renderOptions(val) {
-			datalist.innerHTML = '';
+		// --- Lógica para el formulario de AGREGAR ---
+		var inputNuevo = document.getElementById('nuevoNombre');
+		var datalistNuevo = document.getElementById('listaColaboradoresNuevo');
+		var allOptionsNuevo = Array.from(datalistNuevo.options).map(opt => opt.value);
+		function renderOptionsNuevo(val) {
+			datalistNuevo.innerHTML = '';
 			if (!val) {
-				allOptions.forEach(function(nombre) {
+				allOptionsNuevo.forEach(function(nombre) {
 					var opt = document.createElement('option');
 					opt.value = nombre;
-					datalist.appendChild(opt);
+					datalistNuevo.appendChild(opt);
 				});
 			} else {
-				allOptions.forEach(function(nombre) {
+				allOptionsNuevo.forEach(function(nombre) {
 					if (nombre.toLowerCase().includes(val)) {
 						var opt = document.createElement('option');
 						opt.value = nombre;
-						datalist.appendChild(opt);
+						datalistNuevo.appendChild(opt);
 					}
 				});
 			}
 		}
-		// Inicializar con todas las opciones
-		renderOptions('');
-		input.addEventListener('input', function() {
-			var val = input.value.trim().toLowerCase();
-			renderOptions(val);
+		renderOptionsNuevo('');
+		inputNuevo.addEventListener('input', function() {
+			var val = inputNuevo.value.trim().toLowerCase();
+			renderOptionsNuevo(val);
+			// Sincronizar ID_COLABORADOR
+			var col = colaboradoresInfo.find(c => c.nombre === inputNuevo.value);
+			var idColaboradorHidden = document.getElementById('nuevoIdColaborador');
+			if (col && idColaboradorHidden) {
+				idColaboradorHidden.value = col.id;
+			} else if (idColaboradorHidden) {
+				idColaboradorHidden.value = '';
+			}
 		});
-		// También restaurar si el input queda vacío por otros medios
-		input.addEventListener('change', function() {
-			if (!input.value.trim()) renderOptions('');
+		inputNuevo.addEventListener('change', function() {
+			if (!inputNuevo.value.trim()) renderOptionsNuevo('');
 		});
-		input.addEventListener('blur', function() {
-			if (!input.value.trim()) renderOptions('');
+		inputNuevo.addEventListener('blur', function() {
+			if (!inputNuevo.value.trim()) renderOptionsNuevo('');
 		});
-
-		// Autocompletado de área y departamento
-		var areaSelect = document.getElementById('nuevaArea');
-		var depSelect = document.getElementById('nuevoDepartamento');
-		var areaHidden = document.getElementById('nuevaAreaHidden');
-		var depHidden = document.getElementById('nuevoDepartamentoHidden');
-		function syncHiddenFields() {
-			areaHidden.value = areaSelect.value;
-			depHidden.value = depSelect.value;
-		}
-		if (input && areaSelect && depSelect && areaHidden && depHidden) {
-			input.addEventListener('input', function() {
-				const nombre = this.value;
-				const col = colaboradoresInfo.find(c => c.nombre === nombre);
-				areaSelect.innerHTML = '<option value="">Seleccione un área</option>';
-				depSelect.innerHTML = '<option value="">Seleccione un departamento</option>';
-				if (col) {
-					areaSelect.innerHTML += `<option value="${col.area.id}" selected>${col.area.nombre}</option>`;
-					depSelect.innerHTML += `<option value="${col.departamento.id}" selected>${col.departamento.nombre}</option>`;
-				}
-				syncHiddenFields();
-			});
-			// Al cargar la página, sincronizar los campos ocultos
-			syncHiddenFields();
-		}
-		// Sincronizar también al abrir el modal por si acaso
-		var modalAgregar = document.getElementById('modalAgregar');
-		if (modalAgregar) {
-			modalAgregar.addEventListener('show.bs.modal', syncHiddenFields);
-		}
 	});
-	</script>
+</script>
+<!-- Eliminado: lógica antigua de autocompletado para el formulario de agregar (reemplazada por la nueva con IDs únicos) -->
 <script>
 // --- Lógica para autocompletar y sincronizar área y departamento en el modal de edición de extensión ---
 document.addEventListener('DOMContentLoaded', function() {
@@ -176,6 +155,124 @@ document.addEventListener('DOMContentLoaded', function() {
 			}, true);
 		}
 	}
+});
+</script>
+<script>
+// --- Lógica para el formulario de EDITAR ---
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Lógica para el formulario de AGREGAR ---
+    var inputNuevo = document.getElementById('nuevoNombre');
+    var datalistNuevo = document.getElementById('listaColaboradoresNuevo');
+    var allOptionsNuevo = Array.from(datalistNuevo.options).map(opt => opt.value);
+    function renderOptionsNuevo(val) {
+      datalistNuevo.innerHTML = '';
+      if (!val) {
+        allOptionsNuevo.forEach(function(nombre) {
+          var opt = document.createElement('option');
+          opt.value = nombre;
+          datalistNuevo.appendChild(opt);
+        });
+      } else {
+        allOptionsNuevo.forEach(function(nombre) {
+          if (nombre.toLowerCase().includes(val)) {
+            var opt = document.createElement('option');
+            opt.value = nombre;
+            datalistNuevo.appendChild(opt);
+          }
+        });
+      }
+    }
+    renderOptionsNuevo('');
+    inputNuevo.addEventListener('input', function() {
+      var val = inputNuevo.value.trim().toLowerCase();
+      renderOptionsNuevo(val);
+      // Sincronizar ID_COLABORADOR
+      var col = colaboradoresInfo.find(c => c.nombre === inputNuevo.value);
+      var idColaboradorHidden = document.getElementById('nuevoIdColaborador');
+      if (col && idColaboradorHidden) {
+        idColaboradorHidden.value = col.id;
+      } else if (idColaboradorHidden) {
+        idColaboradorHidden.value = '';
+      }
+    });
+    inputNuevo.addEventListener('change', function() {
+      if (!inputNuevo.value.trim()) renderOptionsNuevo('');
+    });
+    inputNuevo.addEventListener('blur', function() {
+      if (!inputNuevo.value.trim()) renderOptionsNuevo('');
+    });
+
+    // --- Lógica para el formulario de EDITAR ---
+    var inputEditar = document.getElementById('editarNombre');
+    var datalistEditar = document.getElementById('listaColaboradoresEditar');
+    var allOptionsEditar = Array.from(datalistEditar.options).map(opt => opt.value);
+    function renderOptionsEditar(val) {
+        datalistEditar.innerHTML = '';
+        if (!val) {
+            allOptionsEditar.forEach(function(nombre) {
+                var opt = document.createElement('option');
+                opt.value = nombre;
+                datalistEditar.appendChild(opt);
+            });
+        } else {
+            allOptionsEditar.forEach(function(nombre) {
+                if (nombre.toLowerCase().includes(val)) {
+                    var opt = document.createElement('option');
+                    opt.value = nombre;
+                    datalistEditar.appendChild(opt);
+                }
+            });
+        }
+    }
+    renderOptionsEditar('');
+    inputEditar.addEventListener('input', function() {
+        var val = inputEditar.value.trim().toLowerCase();
+        renderOptionsEditar(val);
+        // Sincronizar ID_COLABORADOR
+        var col = colaboradoresInfo.find(c => c.nombre === inputEditar.value);
+        var idColaboradorHidden = document.getElementById('editarIdColaborador');
+        if (col && idColaboradorHidden) {
+            idColaboradorHidden.value = col.id;
+        } else if (idColaboradorHidden) {
+            idColaboradorHidden.value = '';
+        }
+    });
+    inputEditar.addEventListener('change', function() {
+        if (!inputEditar.value.trim()) renderOptionsEditar('');
+    });
+    inputEditar.addEventListener('blur', function() {
+        if (!inputEditar.value.trim()) renderOptionsEditar('');
+    });
+});
+</script>
+<script>
+// --- Lógica para autocompletar área, departamento e ID_COLABORADOR en el formulario de AGREGAR extensión ---
+document.addEventListener('DOMContentLoaded', function() {
+    var inputNuevo = document.getElementById('nuevoNombre');
+    var areaSelect = document.getElementById('nuevaArea');
+    var depSelect = document.getElementById('nuevoDepartamento');
+    var areaHidden = document.getElementById('nuevaAreaHidden');
+    var depHidden = document.getElementById('nuevoDepartamentoHidden');
+    var idColaboradorHidden = document.getElementById('nuevoIdColaborador');
+
+    inputNuevo.addEventListener('input', function() {
+        var nombre = inputNuevo.value;
+        var col = (window.colaboradoresInfo || colaboradoresInfo).find(function(c) { return c.nombre === nombre; });
+        // Autocompletar área y departamento
+        areaSelect.innerHTML = '<option value="">Seleccione un área</option>';
+        depSelect.innerHTML = '<option value="">Seleccione un departamento</option>';
+		if (col) {
+			areaSelect.innerHTML += `<option value="${col.area.id}" selected>${col.area.nombre}</option>`;
+			depSelect.innerHTML += `<option value="${col.departamento.id}" selected>${col.departamento.nombre}</option>`;
+			if (areaHidden) areaHidden.value = col.area.id;
+			if (depHidden) depHidden.value = col.departamento.id;
+			if (idColaboradorHidden) idColaboradorHidden.value = col.id;
+		} else {
+			if (areaHidden) areaHidden.value = '';
+			if (depHidden) depHidden.value = '';
+			if (idColaboradorHidden) idColaboradorHidden.value = '';
+		}
+    });
 });
 </script>
 </head>
@@ -217,12 +314,13 @@ document.addEventListener('DOMContentLoaded', function() {
 							<input type="hidden" name="id" id="editarId">
 							<div class="mb-3">
 								<label for="editarNombre" class="form-label">Nombre</label>
-								<input list="listaColaboradores" class="form-control" name="nombre" id="editarNombre" required autocomplete="off" placeholder="Buscar y seleccionar colaborador...">
-								<datalist id="listaColaboradores">
-									{% for nombre in colaboradores %}
-										<option value="{{ nombre }}">{{ nombre }}</option>
+								<input list="listaColaboradoresEditar" class="form-control" id="editarNombre" required autocomplete="off" placeholder="Buscar y seleccionar colaborador...">
+								<datalist id="listaColaboradoresEditar">
+									{% for col in colaboradores_info %}
+										<option value="{{ col.nombre }}" data-id="{{ col.id }}">{{ col.nombre }}</option>
 									{% endfor %}
 								</datalist>
+								<input type="hidden" name="id_colaborador" id="editarIdColaborador">
 							</div>
 							<div class="mb-3">
 								<label for="editarExtension" class="form-label">Extensión</label>
@@ -270,12 +368,13 @@ document.addEventListener('DOMContentLoaded', function() {
 						<div class="modal-body">
 							<div class="mb-3">
 								<label for="nuevoNombre" class="form-label">Nombre</label>
-								<input list="listaColaboradores" class="form-control" name="nombre" id="nuevoNombre" required autocomplete="off" placeholder="Buscar y seleccionar colaborador...">
-								<datalist id="listaColaboradores">
-									{% for nombre in colaboradores %}
-										<option value="{{ nombre }}">{{ nombre }}</option>
+								<input list="listaColaboradoresNuevo" class="form-control" id="nuevoNombre" required autocomplete="off" placeholder="Buscar y seleccionar colaborador...">
+								<datalist id="listaColaboradoresNuevo">
+									{% for col in colaboradores_info %}
+										<option value="{{ col.nombre }}" data-id="{{ col.id }}">{{ col.nombre }}</option>
 									{% endfor %}
 								</datalist>
+								<input type="hidden" name="id_colaborador" id="nuevoIdColaborador">
 							</div>
 							<div class="mb-3">
 								<label for="nuevaExtension" class="form-label">Extensión</label>
@@ -359,7 +458,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				{% for ext in extensiones %}
 				<tr>
 					<td>{{ ext[0] }}</td>
-					<td class="ext-nombre">{{ ext[1] }}</td>
+					   <td class="ext-nombre">{{ ext[1] }}</td>
 					<td class="ext-extension">{{ ext[2] }}</td>
 					<td class="ext-area" data-area-id="{{ ext[5] }}">{{ ext[3] }}</td>
 					<td class="ext-departamento" data-dep-id="{{ ext[6] }}">{{ ext[4] }}</td>

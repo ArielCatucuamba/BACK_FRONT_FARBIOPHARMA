@@ -63,6 +63,7 @@
 </head>
 
 <body>
+		
 	<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
 			<a class="navbar-brand" href="{{ url_for('index') }}">Celulares</a>
@@ -74,6 +75,19 @@
     </nav>
 
 	<div class="container mt-5">
+		{% with messages = get_flashed_messages(with_categories=true) %}
+			{% if messages %}
+				<div class="container mt-3">
+					{% for category, message in messages %}
+						<div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+							{{ message }}
+							<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+						</div>
+					{% endfor %}
+				</div>
+			{% endif %}
+		{% endwith %}
+		
 		<div class="d-flex justify-content-between align-items-center mb-3">
 			<a href="/menu" class="btn btn-secondary">&larr; Regresar al menú</a>
 			<div class="ms-3" style="min-width:350px; max-width:500px; width:100%;">
@@ -100,12 +114,13 @@
 							<input type="hidden" name="id" id="editarId">
 							<div class="mb-3">
 								<label for="editarNombre" class="form-label">Nombre</label>
-								<input list="listaColaboradores" class="form-control" name="nombre" id="editarNombre" required autocomplete="off">
-								<datalist id="listaColaboradores">
-									{% for nombre in colaboradores %}
-										<option value="{{ nombre }}">{{ nombre }}</option>
+								<input list="listaColaboradoresEditar" class="form-control" id="editarNombre" required autocomplete="off">
+								<datalist id="listaColaboradoresEditar">
+									{% for col in colaboradores_info %}
+										<option value="{{ col.nombre }}" data-id="{{ col.id }}">{{ col.nombre }}</option>
 									{% endfor %}
 								</datalist>
+								<input type="hidden" name="id_colaborador" id="editarIdColaborador">
 							</div>
 							<div class="mb-3">
 								<label for="editarCelular" class="form-label">Celular</label>
@@ -113,21 +128,23 @@
 							</div>
 							<div class="mb-3">
 								<label for="editarArea" class="form-label">Área</label>
-								<select class="form-select" name="area" id="editarArea" required>
+								<select class="form-select" id="editarArea" required disabled>
 									<option value="">Seleccione un área</option>
 									{% for a in areas %}
 										<option value="{{ a[0] }}">{{ a[1] }}</option>
 									{% endfor %}
 								</select>
+								<input type="hidden" name="area" id="editarAreaHidden">
 							</div>
 							<div class="mb-3">
 								<label for="editarDepartamento" class="form-label">Departamento</label>
-								<select class="form-select" name="departamento" id="editarDepartamento" required>
+								<select class="form-select" id="editarDepartamento" required disabled>
 									<option value="">Seleccione un departamento</option>
 									{% for d in departamentos %}
 										<option value="{{ d[0] }}">{{ d[1] }}</option>
 									{% endfor %}
 								</select>
+								<input type="hidden" name="departamento" id="editarDepartamentoHidden">
 							</div>
 						</div>
 						<div class="modal-footer">
@@ -151,12 +168,13 @@
 						<div class="modal-body">
 							<div class="mb-3">
 								<label for="nuevoNombre" class="form-label">Nombre</label>
-								<input list="listaColaboradores" class="form-control" name="nombre" id="nuevoNombre" required autocomplete="off">
-								<datalist id="listaColaboradores">
-									{% for nombre in colaboradores %}
-										<option value="{{ nombre }}">{{ nombre }}</option>
+								<input list="listaColaboradoresNuevo" class="form-control" id="nuevoNombre" required autocomplete="off">
+								<datalist id="listaColaboradoresNuevo">
+									{% for col in colaboradores_info %}
+										<option value="{{ col.nombre }}" data-id="{{ col.id }}">{{ col.nombre }}</option>
 									{% endfor %}
 								</datalist>
+								<input type="hidden" name="id_colaborador" id="nuevoIdColaborador">
 								<script>
 								// Filtrado dinámico de datalist por coincidencia parcial para el campo Nombre
 								document.addEventListener('DOMContentLoaded', function() {
@@ -203,15 +221,17 @@
 							</div>
 							<div class="mb-3">
 								<label for="nuevaArea" class="form-label">Área</label>
-								<select class="form-select" name="area" id="nuevaArea" required>
+								<select class="form-select" id="nuevaArea" required disabled>
 									<option value="">Seleccione un área</option>
 								</select>
+								<input type="hidden" name="area" id="nuevaAreaHidden">
 							</div>
 							<div class="mb-3">
 								<label for="nuevoDepartamento" class="form-label">Departamento</label>
-								<select class="form-select" name="departamento" id="nuevoDepartamento" required>
+								<select class="form-select" id="nuevoDepartamento" required disabled>
 									<option value="">Seleccione un departamento</option>
 								</select>
+								<input type="hidden" name="departamento" id="nuevoDepartamentoHidden">
 							</div>
 						</div>
 						<div class="modal-footer">
@@ -297,28 +317,63 @@
 	</div>
 	<script>
 		// Mapeo de colaboradores a área y departamento (relleno desde backend)
-		const colaboradoresInfo = [
-			{% for col in colaboradores_info %}
-			{
-				nombre: "{{ col.nombre|e }}",
-				area: {id: {{ col.area_id }}, nombre: "{{ col.area_nombre|e }}"},
-				departamento: {id: {{ col.departamento_id }}, nombre: "{{ col.departamento_nombre|e }}"}
-			},
-			{% endfor %}
-		];
+		   const colaboradoresInfo = [
+			   {% for col in colaboradores_info %}
+			   {
+				   id: "{{ col.id }}",
+				   nombre: "{{ col.nombre|e }}",
+				   area: {id: "{{ col.area_id }}", nombre: "{{ col.area_nombre|e }}"},
+				   departamento: {id: "{{ col.departamento_id }}", nombre: "{{ col.departamento_nombre|e }}"}
+			   }{% if not loop.last %},{% endif %}
+			   {% endfor %}
+		   ];
 
 		document.getElementById('nuevoNombre').addEventListener('input', function() {
 			const nombre = this.value;
 			const col = colaboradoresInfo.find(c => c.nombre === nombre);
 			const areaSelect = document.getElementById('nuevaArea');
 			const depSelect = document.getElementById('nuevoDepartamento');
+			const areaHidden = document.getElementById('nuevaAreaHidden');
+			const depHidden = document.getElementById('nuevoDepartamentoHidden');
+			const idColaboradorHidden = document.getElementById('nuevoIdColaborador');
 			areaSelect.innerHTML = '<option value="">Seleccione un área</option>';
 			depSelect.innerHTML = '<option value="">Seleccione un departamento</option>';
 			if (col) {
 				areaSelect.innerHTML += `<option value="${col.area.id}" selected>${col.area.nombre}</option>`;
 				depSelect.innerHTML += `<option value="${col.departamento.id}" selected>${col.departamento.nombre}</option>`;
+				if (areaHidden) areaHidden.value = col.area.id;
+				if (depHidden) depHidden.value = col.departamento.id;
+				if (idColaboradorHidden) idColaboradorHidden.value = col.id;
+			} else {
+				if (areaHidden) areaHidden.value = '';
+				if (depHidden) depHidden.value = '';
+				if (idColaboradorHidden) idColaboradorHidden.value = '';
 			}
 		});
+		// Sincronizar campos ocultos al abrir el modal de agregar
+		var modalAgregar = document.getElementById('modalAgregar');
+		if (modalAgregar) {
+			modalAgregar.addEventListener('show.bs.modal', function() {
+				var areaHidden = document.getElementById('nuevaAreaHidden');
+				var depHidden = document.getElementById('nuevoDepartamentoHidden');
+				var areaSelect = document.getElementById('nuevaArea');
+				var depSelect = document.getElementById('nuevoDepartamento');
+				if (areaHidden && areaSelect) areaHidden.value = areaSelect.value;
+				if (depHidden && depSelect) depHidden.value = depSelect.value;
+			});
+		}
+		// Sincronizar SIEMPRE justo antes de enviar el formulario de agregar
+		var formNuevo = document.querySelector('form[action="{{ url_for('crud_celulares') }}"]');
+		if (formNuevo) {
+			formNuevo.addEventListener('submit', function(e) {
+				var areaHidden = document.getElementById('nuevaAreaHidden');
+				var depHidden = document.getElementById('nuevoDepartamentoHidden');
+				var areaSelect = document.getElementById('nuevaArea');
+				var depSelect = document.getElementById('nuevoDepartamento');
+				if (areaHidden && areaSelect) areaHidden.value = areaSelect.value;
+				if (depHidden && depSelect) depHidden.value = depSelect.value;
+			}, true);
+		}
 		function llenarFormularioEditarDesdeBoton(btn) {
 			var id = btn.getAttribute('data-id');
 			var nombre = btn.getAttribute('data-nombre');
@@ -331,6 +386,56 @@
 			document.getElementById('editarCelular').value = celular;
 			document.getElementById('editarArea').value = areaId;
 			document.getElementById('editarDepartamento').value = depId;
+			// Sincronizar campos ocultos
+			var areaHidden = document.getElementById('editarAreaHidden');
+			var depHidden = document.getElementById('editarDepartamentoHidden');
+			if (areaHidden) areaHidden.value = areaId;
+			if (depHidden) depHidden.value = depId;
+		}
+
+		// Autocompletar área y departamento al cambiar el nombre en editar
+		document.getElementById('editarNombre').addEventListener('input', function() {
+			const nombre = this.value;
+			const col = colaboradoresInfo.find(c => c.nombre === nombre);
+			const areaSelect = document.getElementById('editarArea');
+			const depSelect = document.getElementById('editarDepartamento');
+			const areaHidden = document.getElementById('editarAreaHidden');
+			const depHidden = document.getElementById('editarDepartamentoHidden');
+			areaSelect.innerHTML = '<option value="">Seleccione un área</option>';
+			depSelect.innerHTML = '<option value="">Seleccione un departamento</option>';
+			if (col) {
+				areaSelect.innerHTML += `<option value="${col.area.id}" selected>${col.area.nombre}</option>`;
+				depSelect.innerHTML += `<option value="${col.departamento.id}" selected>${col.departamento.nombre}</option>`;
+				if (areaHidden) areaHidden.value = col.area.id;
+				if (depHidden) depHidden.value = col.departamento.id;
+			} else {
+				if (areaHidden) areaHidden.value = '';
+				if (depHidden) depHidden.value = '';
+			}
+		});
+		// Sincronizar campos ocultos al abrir el modal de editar
+		var modalEditar = document.getElementById('modalEditar');
+		if (modalEditar) {
+			modalEditar.addEventListener('show.bs.modal', function() {
+				var areaHidden = document.getElementById('editarAreaHidden');
+				var depHidden = document.getElementById('editarDepartamentoHidden');
+				var areaSelect = document.getElementById('editarArea');
+				var depSelect = document.getElementById('editarDepartamento');
+				if (areaHidden && areaSelect) areaHidden.value = areaSelect.value;
+				if (depHidden && depSelect) depHidden.value = depSelect.value;
+			});
+		}
+		// Sincronizar SIEMPRE justo antes de enviar el formulario de editar
+		var formEditar = document.getElementById('formEditar');
+		if (formEditar) {
+			formEditar.addEventListener('submit', function(e) {
+				var areaHidden = document.getElementById('editarAreaHidden');
+				var depHidden = document.getElementById('editarDepartamentoHidden');
+				var areaSelect = document.getElementById('editarArea');
+				var depSelect = document.getElementById('editarDepartamento');
+				if (areaHidden && areaSelect) areaHidden.value = areaSelect.value;
+				if (depHidden && depSelect) depHidden.value = depSelect.value;
+			}, true);
 		}
 		function filtrarPorArea() {
 			var select = document.getElementById('selectArea');
@@ -348,6 +453,91 @@
 				}
 			}
 		}
+		document.addEventListener('DOMContentLoaded', function() {
+    // --- Lógica para el formulario de AGREGAR ---
+    var inputNuevo = document.getElementById('nuevoNombre');
+    var datalistNuevo = document.getElementById('listaColaboradoresNuevo');
+    var allOptionsNuevo = Array.from(datalistNuevo.options).map(opt => opt.value);
+    function renderOptionsNuevo(val) {
+        datalistNuevo.innerHTML = '';
+        if (!val) {
+            allOptionsNuevo.forEach(function(nombre) {
+                var opt = document.createElement('option');
+                opt.value = nombre;
+                datalistNuevo.appendChild(opt);
+            });
+        } else {
+            allOptionsNuevo.forEach(function(nombre) {
+                if (nombre.toLowerCase().includes(val)) {
+                    var opt = document.createElement('option');
+                    opt.value = nombre;
+                    datalistNuevo.appendChild(opt);
+                }
+            });
+        }
+    }
+    renderOptionsNuevo('');
+    inputNuevo.addEventListener('input', function() {
+        var val = inputNuevo.value.trim().toLowerCase();
+        renderOptionsNuevo(val);
+        // Sincronizar ID_COLABORADOR
+        var col = colaboradoresInfo.find(c => c.nombre === inputNuevo.value);
+        var idColaboradorHidden = document.getElementById('nuevoIdColaborador');
+        if (col && idColaboradorHidden) {
+            idColaboradorHidden.value = col.id;
+        } else if (idColaboradorHidden) {
+            idColaboradorHidden.value = '';
+        }
+    });
+    inputNuevo.addEventListener('change', function() {
+        if (!inputNuevo.value.trim()) renderOptionsNuevo('');
+    });
+    inputNuevo.addEventListener('blur', function() {
+        if (!inputNuevo.value.trim()) renderOptionsNuevo('');
+    });
+
+    // --- Lógica para el formulario de EDITAR ---
+    var inputEditar = document.getElementById('editarNombre');
+    var datalistEditar = document.getElementById('listaColaboradoresEditar');
+    var allOptionsEditar = Array.from(datalistEditar.options).map(opt => opt.value);
+    function renderOptionsEditar(val) {
+        datalistEditar.innerHTML = '';
+        if (!val) {
+            allOptionsEditar.forEach(function(nombre) {
+                var opt = document.createElement('option');
+                opt.value = nombre;
+                datalistEditar.appendChild(opt);
+            });
+        } else {
+            allOptionsEditar.forEach(function(nombre) {
+                if (nombre.toLowerCase().includes(val)) {
+                    var opt = document.createElement('option');
+                    opt.value = nombre;
+                    datalistEditar.appendChild(opt);
+                }
+            });
+        }
+    }
+    renderOptionsEditar('');
+    inputEditar.addEventListener('input', function() {
+        var val = inputEditar.value.trim().toLowerCase();
+        renderOptionsEditar(val);
+        // Sincronizar ID_COLABORADOR
+        var col = colaboradoresInfo.find(c => c.nombre === inputEditar.value);
+        var idColaboradorHidden = document.getElementById('editarIdColaborador');
+        if (col && idColaboradorHidden) {
+            idColaboradorHidden.value = col.id;
+        } else if (idColaboradorHidden) {
+            idColaboradorHidden.value = '';
+        }
+    });
+    inputEditar.addEventListener('change', function() {
+        if (!inputEditar.value.trim()) renderOptionsEditar('');
+    });
+    inputEditar.addEventListener('blur', function() {
+        if (!inputEditar.value.trim()) renderOptionsEditar('');
+    });
+});
 	</script>
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
