@@ -12,6 +12,7 @@ app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "tu_clave_secreta_aqui")
 
 # Configuración de la base de datos MySQL
 
+
 # Inicializar la base de datos
 mysql = MySQL(app)
 
@@ -190,23 +191,40 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        
+        # Límite de intentos por sesión
+        if 'login_attempts' not in session:
+            session['login_attempts'] = 0
+        import time
+        bloqueado = False
+        if session.get('login_blocked_until'):
+            if time.time() < session['login_blocked_until']:
+                bloqueado = True
+        if session['login_attempts'] >= 5 or bloqueado:
+            if not bloqueado:
+                session['login_blocked_until'] = time.time() + 5*60
+            restante = int(session['login_blocked_until'] - time.time())
+            minutos = restante // 60
+            segundos = restante % 60
+            flash(f'Has superado el límite de intentos. Intenta nuevamente en {minutos}m {segundos}s.', 'danger')
+            return render_template('Login/login.html')
         if not username or not password:
             flash('Por favor, complete todos los campos', 'error')
             return render_template('Login/login.html')
-        
         cur = mysql.connection.cursor()
         cur.execute("SELECT id, username, password_hash FROM usuarios WHERE username = %s", (username,))
         user = cur.fetchone()
         cur.close()
-        
         if user and bcrypt.checkpw(password.encode('utf-8'), user[2].encode('utf-8')):
             session['user_id'] = user[0]
             session['username'] = user[1]
+            session['login_attempts'] = 0
+            session.pop('login_blocked_until', None)
             flash('Inicio de sesión exitoso', 'success')
             return redirect(url_for('menu'))
         else:
-            flash('Usuario o contraseña incorrectos', 'error')
+            session['login_attempts'] += 1
+            intentos_restantes = 5 - session['login_attempts']
+            flash(f'Usuario o contraseña incorrectos. Intentos restantes: {intentos_restantes}', 'error')
         return render_template('Login/login.html')
     # Limpiar mensajes flash previos (de otras vistas) al mostrar el login
     session.pop('_flashes', None)
