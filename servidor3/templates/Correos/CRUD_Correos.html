@@ -386,11 +386,23 @@
 			document.getElementById('editarCorreo').value = correo;
 			document.getElementById('editarArea').value = areaId;
 			document.getElementById('editarDepartamento').value = depId;
-			// Sincronizar campos ocultos
+			// Sincronizar campos ocultos y autocompletar selects
 			var areaHidden = document.getElementById('editarAreaHidden');
 			var depHidden = document.getElementById('editarDepartamentoHidden');
+			var areaSelect = document.getElementById('editarArea');
+			var depSelect = document.getElementById('editarDepartamento');
 			if (areaHidden) areaHidden.value = areaId;
 			if (depHidden) depHidden.value = depId;
+			// Autocompletar selects de área y departamento según el colaborador
+			var col = colaboradoresInfo.find(c => c.nombre === nombre);
+			areaSelect.innerHTML = '<option value="">Seleccione un área</option>';
+			depSelect.innerHTML = '<option value="">Seleccione un departamento</option>';
+			if (col) {
+				areaSelect.innerHTML += `<option value="${col.area.id}" selected>${col.area.nombre}</option>`;
+				depSelect.innerHTML += `<option value="${col.departamento.id}" selected>${col.departamento.nombre}</option>`;
+				if (areaHidden) areaHidden.value = col.area.id;
+				if (depHidden) depHidden.value = col.departamento.id;
+			}
 		}
 
 		// Autocompletar área y departamento al cambiar el nombre en editar
@@ -429,6 +441,30 @@
 		var formEditar = document.getElementById('formEditar');
 		if (formEditar) {
 			formEditar.addEventListener('submit', function(e) {
+				var idColaboradorHidden = document.getElementById('editarIdColaborador');
+				var nombreInput = document.getElementById('editarNombre');
+				var col = colaboradoresInfo.find(c => c.nombre === nombreInput.value);
+				if (col && idColaboradorHidden) {
+					idColaboradorHidden.value = col.id;
+				} else if (idColaboradorHidden) {
+					e.preventDefault();
+					idColaboradorHidden.value = '';
+					alert('Debes seleccionar un colaborador válido.');
+					return;
+				}
+				// Validar área y departamento
+				var areaHidden = document.getElementById('editarAreaHidden');
+				var depHidden = document.getElementById('editarDepartamentoHidden');
+				if (!areaHidden.value) {
+					e.preventDefault();
+					alert('El campo área no puede estar vacío.');
+					return;
+				}
+				if (!depHidden.value) {
+					e.preventDefault();
+					alert('El campo departamento no puede estar vacío.');
+					return;
+				}
 				var areaHidden = document.getElementById('editarAreaHidden');
 				var depHidden = document.getElementById('editarDepartamentoHidden');
 				var areaSelect = document.getElementById('editarArea');

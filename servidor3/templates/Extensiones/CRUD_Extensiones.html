@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	var selectDepEdit = document.getElementById('editarDepartamento');
 	var areaHiddenEdit = document.getElementById('editarAreaHidden');
 	var depHiddenEdit = document.getElementById('editarDepartamentoHidden');
-	function syncHiddenFieldsEdit() {
+		function syncHiddenFieldsEdit() {
 		if (areaHiddenEdit && selectAreaEdit) areaHiddenEdit.value = selectAreaEdit.value;
 		if (depHiddenEdit && selectDepEdit) depHiddenEdit.value = selectDepEdit.value;
 	}
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				selectAreaEdit.innerHTML += `<option value="${col.area.id}" selected>${col.area.nombre}</option>`;
 				selectDepEdit.innerHTML += `<option value="${col.departamento.id}" selected>${col.departamento.nombre}</option>`;
 			}
-			syncHiddenFieldsEdit();
+				syncHiddenFieldsEdit();
 		});
 		// Sincronizar campos ocultos al abrir el modal de edición
 		var modalEditar = document.getElementById('modalEditar');
@@ -151,7 +151,31 @@ document.addEventListener('DOMContentLoaded', function() {
 		var formEdit = document.getElementById('formEditar');
 		if (formEdit) {
 			formEdit.addEventListener('submit', function(e) {
-				syncHiddenFieldsEdit();
+				var idColaboradorHidden = document.getElementById('editarIdColaborador');
+				var nombreInput = document.getElementById('editarNombre');
+				var areaHidden = document.getElementById('editarAreaHidden');
+				var depHidden = document.getElementById('editarDepartamentoHidden');
+				var areaSelect = document.getElementById('editarArea');
+				var depSelect = document.getElementById('editarDepartamento');
+				var col = colaboradoresInfo.find(c => c.nombre === nombreInput.value);
+				// Sincronizar id_colaborador
+				if (col && idColaboradorHidden) {
+					idColaboradorHidden.value = col.id;
+				} else if (idColaboradorHidden) {
+					e.preventDefault();
+					idColaboradorHidden.value = '';
+					alert('Debes seleccionar un colaborador válido.');
+					return;
+				}
+				// Sincronizar área y departamento
+				if (areaHidden && areaSelect) areaHidden.value = areaSelect.value;
+				if (depHidden && depSelect) depHidden.value = depSelect.value;
+				// Validar área
+				if (!areaHidden.value) {
+					e.preventDefault();
+					alert('El campo área no puede estar vacío.');
+					return;
+				}
 			}, true);
 		}
 	}

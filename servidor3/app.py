@@ -12,7 +12,6 @@ app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "tu_clave_secreta_aqui")
 
 # Configuración de la base de datos MySQL
 
-
 # Inicializar la base de datos
 mysql = MySQL(app)
 
@@ -910,7 +909,17 @@ def crud_correos():
         correo = request.form.get('correo')
         area = request.form.get('area')
         departamento = request.form.get('departamento')
-        if id_colaborador and correo and area and departamento:
+        import re
+        correo_regex = r'^([A-Za-z][A-Za-z0-9_.+-]*)@((farbiopharma|inpelab)\.com)$'
+        if not correo or '@' not in correo:
+            flash('El correo debe contener el separador @.', 'danger')
+        elif correo.partition('@')[0].isdigit():
+            flash('El nombre de usuario del correo no puede contener solo números.', 'danger')
+        elif correo.partition('@')[2] not in ['farbiopharma.com', 'inpelab.com']:
+            flash('El dominio del correo debe ser farbiopharma.com o inpelab.com.', 'danger')
+        elif not re.match(correo_regex, correo):
+            flash('El formato del correo no es válido.', 'danger')
+        elif id_colaborador and correo and area and departamento:
             try:
                 cur.execute("INSERT INTO correos (ID_COLABORADOR, CORREO, AREA, DEPARTAMENTO) VALUES (%s, %s, %s, %s)", (id_colaborador, correo, area, departamento))
                 mysql.connection.commit()
@@ -941,6 +950,23 @@ def editar_correo(id):
     correo = request.form.get('correo')
     area = request.form.get('area')
     departamento = request.form.get('departamento')
+    import re
+    # Validación de formato de correo
+    correo_regex = r'^([A-Za-z][A-Za-z0-9_.+-]*)@((farbiopharma|inpelab)\.com)$'
+    if not correo or '@' not in correo:
+        flash('El correo debe contener el separador @.', 'danger')
+        return redirect(url_for('crud_correos'))
+    usuario, sep, dominio = correo.partition('@')
+    if usuario.isdigit():
+        flash('El nombre de usuario del correo no puede contener solo números.', 'danger')
+        return redirect(url_for('crud_correos'))
+    if dominio not in ['farbiopharma.com', 'inpelab.com']:
+        flash('El dominio del correo debe ser farbiopharma.com o inpelab.com.', 'danger')
+        return redirect(url_for('crud_correos'))
+    # Validación extra con regex
+    if not re.match(correo_regex, correo):
+        flash('El formato del correo no es válido.', 'danger')
+        return redirect(url_for('crud_correos'))
     cur = mysql.connection.cursor()
     cur.execute("UPDATE correos SET ID_COLABORADOR = %s, CORREO = %s, AREA = %s, DEPARTAMENTO = %s WHERE ID_CORREOS = %s", (id_colaborador, correo, area, departamento, id))
     mysql.connection.commit()

@@ -429,6 +429,17 @@
 		var formEditar = document.getElementById('formEditar');
 		if (formEditar) {
 			formEditar.addEventListener('submit', function(e) {
+				var idColaboradorHidden = document.getElementById('editarIdColaborador');
+				var nombreInput = document.getElementById('editarNombre');
+				var col = colaboradoresInfo.find(c => c.nombre === nombreInput.value);
+				if (col && idColaboradorHidden) {
+					idColaboradorHidden.value = col.id;
+				} else if (idColaboradorHidden) {
+					e.preventDefault();
+					idColaboradorHidden.value = '';
+					alert('Debes seleccionar un colaborador válido.');
+					return;
+				}
 				var areaHidden = document.getElementById('editarAreaHidden');
 				var depHidden = document.getElementById('editarDepartamentoHidden');
 				var areaSelect = document.getElementById('editarArea');
