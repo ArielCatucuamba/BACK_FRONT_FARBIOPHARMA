@@ -6,8 +6,11 @@ COPY . .
 
 # Instala las dependencias
 RUN apt-get update && apt-get install -y gcc 
-RUN pip install Flask==2.3.2
+# Framework para crear aplicaciones web con Python
+RUN pip install Flask==2.3.2 
+# Conecta flask con bases de datos MySQL
 RUN pip install Flask-MySQLdb==1.0.1
+# Encripta 
 RUN pip install bcrypt==4.0.1
 
 # Exponer el puerto
