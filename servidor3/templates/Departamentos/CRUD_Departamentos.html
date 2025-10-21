@@ -86,20 +86,7 @@
 						   {% endfor %}
 					   {% endif %}
 				   {% endwith %}
-		<div class="d-flex justify-content-between align-items-center mb-3">
-			<a href="/menu" class="btn btn-secondary">&larr; Regresar al menú</a>
-			<div class="ms-3" style="min-width:350px; max-width:500px; width:100%;">
-				<select id="selectDepartamento" class="form-select" onchange="filtrarPorSelect()">
-					<option value="">-- Todos los departamentos --</option>
-					{% set nombres_departamento = departamentos | map(attribute=1) | list %}
-					{% for nombre in nombres_departamento | unique %}
-					<option value="{{ nombre }}">{{ nombre }}</option>
-					"
-					{% endfor %}
-				</select>
-			</div>
 
-		</div>
 		<!-- Modal para editar departamento -->
 		<div class="modal fade" id="modalEditar" tabindex="-1" aria-labelledby="modalEditarLabel" aria-hidden="true">
 			<div class="modal-dialog">
@@ -182,10 +169,26 @@
 				</div>
 			</div>
 		</div>
-		<div class="d-flex justify-content-between align-items-center mb-3">
-			<h2>Gestión de Departamentos</h2>
-			<button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalAgregar">+ Nuevo
-				departamento</button>
+		<!-- Encabezado mejorado: título y debajo una fila con Regresar, filtro y Agregar -->
+		<div class="mb-2">
+			<h2 class="mb-3">Gestión de Departamentos</h2>
+			<div class="row g-2 align-items-center">
+				<div class="col-auto">
+					<a href="/menu" class="btn btn-secondary">&larr; Regresar al menú</a>
+				</div>
+				<div class="col">
+					<input type="text" id="filtroDepartamento" class="form-control" placeholder="Filtrar por Departamento" autocomplete="off">
+					<datalist id="listaDepartamentos">
+						{% set nombres_departamento = departamentos | map(attribute=1) | list %}
+						{% for nombre in nombres_departamento | unique %}
+							<option value="{{ nombre }}">{{ nombre }}</option>
+						{% endfor %}
+						</datalist>
+				</div>
+				<div class="col-auto">
+					<button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalAgregar">+ Nuevo departamento</button>
+				</div>
+			</div>
 		</div>
 		<table class="table table-bordered table-fixed" id="tablaDepartamentos">
 			<thead>
@@ -225,15 +228,16 @@
 			   document.getElementById('editarId').value = id;
 			   document.getElementById('editarDepartamento').value = departamento;
 		   }
-		function filtrarPorSelect() {
-			var select = document.getElementById('selectDepartamento');
-			var valor = select.value;
+		// Filtrado incremental como en Celulares: coincidencia parcial y case-insensitive
+		function filtrarPorDepartamento() {
+			var valor = document.getElementById('filtroDepartamento').value.trim().toLowerCase();
 			var tabla = document.getElementById('tablaDepartamentos');
 			var filas = tabla.getElementsByTagName('tr');
 			for (var i = 1; i < filas.length; i++) { // i=1 para saltar el encabezado
 				var celda = filas[i].getElementsByClassName('departamento-nombre')[0];
 				if (celda) {
-					if (valor === "" || celda.textContent.trim() === valor) {
+					var texto = celda.textContent.trim().toLowerCase();
+					if (!valor || texto.includes(valor)) {
 						filas[i].style.display = '';
 					} else {
 						filas[i].style.display = 'none';
@@ -241,6 +245,14 @@
 				}
 			}
 		}
+		// Conectar input para filtrado en tiempo real
+		document.addEventListener('DOMContentLoaded', function() {
+			var inputFiltro = document.getElementById('filtroDepartamento');
+			if (inputFiltro) {
+				inputFiltro.setAttribute('list', 'listaDepartamentos');
+				inputFiltro.addEventListener('input', filtrarPorDepartamento);
+			}
+		});
 	</script>
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

@@ -38,8 +38,21 @@
 
 		.table-fixed th:nth-child(4),
 		.table-fixed td:nth-child(4) {
-			min-width: 160px;
-			width: 160px;
+			/* Área: dar más espacio */
+			min-width: 240px;
+			width: 240px;
+		}
+		/* Departamento: aumentar ancho */
+		.table-fixed th:nth-child(5),
+		.table-fixed td:nth-child(5) {
+			min-width: 220px;
+			width: 220px;
+		}
+		/* Acciones: reducir ancho para botones */
+		.table-fixed th:nth-child(6),
+		.table-fixed td:nth-child(6) {
+			min-width: 80px;
+			width: 80px;
 		}
 	</style>
 	<style>
@@ -313,16 +326,26 @@ document.addEventListener('DOMContentLoaded', function() {
     </nav>
 
 	<div class="container mt-5">
-		<div class="d-flex justify-content-between align-items-center mb-3">
-			<a href="/menu" class="btn btn-secondary">&larr; Regresar al menú</a>
-			<div class="ms-3" style="min-width:350px; max-width:500px; width:100%;">
-				<select id="selectArea" class="form-select" onchange="filtrarPorArea()">
-					<option value="">-- Todas las áreas --</option>
-					{% set nombres_area = areas | map(attribute=1) | list %}
-					{% for nombre in nombres_area | unique %}
-					<option value="{{ nombre }}">{{ nombre }}</option>
-					{% endfor %}
-				</select>
+
+		<!-- Encabezado mejorado: título y debajo una fila con Regresar, filtro y Agregar -->
+		<div class="mb-2">
+			<h2 class="mb-3">Gestión de Extensiones</h2>
+			<div class="row g-2 align-items-center">
+				<div class="col-auto">
+					<a href="/menu" class="btn btn-secondary">&larr; Regresar al menú</a>
+				</div>
+				<div class="col">
+					<input type="text" id="filtroArea" class="form-control" placeholder="Filtrar por Área" autocomplete="off">
+					<datalist id="listaAreas">
+						{% set nombres_area = areas | map(attribute=1) | list %}
+						{% for nombre in nombres_area | unique %}
+							<option value="{{ nombre }}">{{ nombre }}</option>
+						{% endfor %}
+					</datalist>
+				</div>
+				<div class="col-auto">
+					<button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalAgregar">+ Nueva extensión</button>
+				</div>
 			</div>
 		</div>
 		<!-- Modal para editar extensión -->
@@ -463,10 +486,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				</div>
 			</div>
 		</div>
-		<div class="d-flex justify-content-between align-items-center mb-3">
-			<h2>Gestión de Extensiones</h2>
-			<button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalAgregar">+ Nueva extensión</button>
-		</div>
+
 		<table class="table table-bordered table-fixed" id="tablaExtensiones">
 			<thead>
 				<tr>
@@ -520,15 +540,16 @@ document.addEventListener('DOMContentLoaded', function() {
 			document.getElementById('editarArea').value = areaId;
 			document.getElementById('editarDepartamento').value = depId;
 		}
+		// Filtrado incremental: coincidencia parcial y case-insensitive
 		function filtrarPorArea() {
-			var select = document.getElementById('selectArea');
-			var valor = select.value;
+			var valor = document.getElementById('filtroArea').value.trim().toLowerCase();
 			var tabla = document.getElementById('tablaExtensiones');
 			var filas = tabla.getElementsByTagName('tr');
 			for (var i = 1; i < filas.length; i++) { // i=1 para saltar el encabezado
 				var celda = filas[i].getElementsByClassName('ext-area')[0];
 				if (celda) {
-					if (valor === "" || celda.textContent.trim() === valor) {
+					var texto = celda.textContent.trim().toLowerCase();
+					if (!valor || texto.includes(valor)) {
 						filas[i].style.display = '';
 					} else {
 						filas[i].style.display = 'none';
@@ -536,6 +557,14 @@ document.addEventListener('DOMContentLoaded', function() {
 				}
 			}
 		}
+		// Conectar input para filtrar en tiempo real
+		document.addEventListener('DOMContentLoaded', function() {
+			var inputFiltro = document.getElementById('filtroArea');
+			if (inputFiltro) {
+				inputFiltro.setAttribute('list', 'listaAreas');
+				inputFiltro.addEventListener('input', filtrarPorArea);
+			}
+		});
 	</script>
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
