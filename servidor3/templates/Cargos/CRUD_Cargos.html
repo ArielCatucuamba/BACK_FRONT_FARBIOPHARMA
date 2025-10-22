@@ -105,6 +105,15 @@
 						{% endfor %}
 					</datalist>
 				</div>
+				<div class="col">
+					<input type="text" id="filtroCargo" class="form-control" placeholder="Filtrar por Cargo" autocomplete="off">
+					<datalist id="listaCargos">
+						{% set nombres_cargo = cargos | map(attribute=1) | list %}
+						{% for nombre in nombres_cargo | unique %}
+							<option value="{{ nombre }}">{{ nombre }}</option>
+						{% endfor %}
+					</datalist>
+				</div>
 				<div class="col-auto">
 					<button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalAgregar">+ Nuevo cargo</button>
 				</div>
@@ -272,29 +281,37 @@
 			document.getElementById('editarDepartamento').value = depId;
 		}
 
-		// Filtrado incremental: coincidencia parcial y case-insensitive
-		function filtrarPorArea() {
-			var valor = document.getElementById('filtroArea').value.trim().toLowerCase();
+		// Filtrado incremental: coincidencia parcial y case-insensitive sobre Área y Cargo
+		function filtrarPorAreaYCargo() {
+			var valorArea = document.getElementById('filtroArea').value.trim().toLowerCase();
+			var valorCargo = document.getElementById('filtroCargo').value.trim().toLowerCase();
 			var tabla = document.getElementById('tablaCargos');
 			var filas = tabla.getElementsByTagName('tr');
 			for (var i = 1; i < filas.length; i++) { // i=1 para saltar el encabezado
-				var celda = filas[i].getElementsByClassName('cargo-area')[0];
-				if (celda) {
-					var texto = celda.textContent.trim().toLowerCase();
-					if (!valor || texto.includes(valor)) {
-						filas[i].style.display = '';
-					} else {
-						filas[i].style.display = 'none';
-					}
+				var celdaArea = filas[i].getElementsByClassName('cargo-area')[0];
+				var celdaCargo = filas[i].getElementsByClassName('cargo-descripcion')[0];
+				var textoArea = celdaArea ? celdaArea.textContent.trim().toLowerCase() : '';
+				var textoCargo = celdaCargo ? celdaCargo.textContent.trim().toLowerCase() : '';
+				var matchArea = !valorArea || textoArea.includes(valorArea);
+				var matchCargo = !valorCargo || textoCargo.includes(valorCargo);
+				if (matchArea && matchCargo) {
+					filas[i].style.display = '';
+				} else {
+					filas[i].style.display = 'none';
 				}
 			}
 		}
-		// Conectar input para filtrar en tiempo real
+		// Conectar inputs para filtrado en tiempo real
 		document.addEventListener('DOMContentLoaded', function() {
-			var inputFiltro = document.getElementById('filtroArea');
-			if (inputFiltro) {
-				inputFiltro.setAttribute('list', 'listaAreas');
-				inputFiltro.addEventListener('input', filtrarPorArea);
+			var inputFiltroArea = document.getElementById('filtroArea');
+			if (inputFiltroArea) {
+				inputFiltroArea.setAttribute('list', 'listaAreas');
+				inputFiltroArea.addEventListener('input', filtrarPorAreaYCargo);
+			}
+			var inputFiltroCargo = document.getElementById('filtroCargo');
+			if (inputFiltroCargo) {
+				inputFiltroCargo.setAttribute('list', 'listaCargos');
+				inputFiltroCargo.addEventListener('input', filtrarPorAreaYCargo);
 			}
 		});
 	</script>

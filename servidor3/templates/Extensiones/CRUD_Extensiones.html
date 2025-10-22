@@ -343,6 +343,14 @@ document.addEventListener('DOMContentLoaded', function() {
 						{% endfor %}
 					</datalist>
 				</div>
+				<div class="col-4">
+					<input type="text" id="filtroNombre" class="form-control" placeholder="Filtrar por Nombre" autocomplete="off" list="listaNombres">
+					<datalist id="listaNombres">
+						{% for col in colaboradores_info %}
+							<option value="{{ col.nombre }}"></option>
+						{% endfor %}
+					</datalist>
+				</div>
 				<div class="col-auto">
 					<button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalAgregar">+ Nueva extensión</button>
 				</div>

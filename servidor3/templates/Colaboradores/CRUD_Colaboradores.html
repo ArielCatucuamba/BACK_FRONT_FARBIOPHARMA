@@ -423,6 +423,15 @@ function cerrarAlertaExito() {
 						{% endfor %}
 					</datalist>
 				</div>
+				<div class="col">
+					<input type="text" id="filtroNombre" class="form-control" placeholder="Filtrar por Nombre" autocomplete="off">
+					<datalist id="listaNombres">
+						{% set nombres_col = colaboradores | map(attribute=1) | list %}
+						{% for nombre in nombres_col | unique %}
+							<option value="{{ nombre }}">{{ nombre }}</option>
+						{% endfor %}
+					</datalist>
+				</div>
 				<div class="col-auto">
 					<button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalAgregar">+ Nuevo colaborador</button>
 				</div>
@@ -494,29 +503,37 @@ function cerrarAlertaExito() {
 			document.getElementById('editarCargo').value = cargoNombre;
 			document.getElementById('editarUbicacion').value = ubicacionId;
 		}
-		// Filtrado incremental: coincidencia parcial y case-insensitive
-		function filtrarPorArea() {
-			var valor = document.getElementById('filtroArea').value.trim().toLowerCase();
+		// Filtrado incremental: coincidencia parcial y case-insensitive sobre Área y Nombre
+		function filtrarPorAreaYNombre() {
+			var valorArea = document.getElementById('filtroArea').value.trim().toLowerCase();
+			var valorNombre = document.getElementById('filtroNombre').value.trim().toLowerCase();
 			var tabla = document.getElementById('tablaColaboradores');
 			var filas = tabla.getElementsByTagName('tr');
 			for (var i = 1; i < filas.length; i++) { // i=1 para saltar el encabezado
-				var celda = filas[i].getElementsByClassName('col-area')[0];
-				if (celda) {
-					var texto = celda.textContent.trim().toLowerCase();
-					if (!valor || texto.includes(valor)) {
-						filas[i].style.display = '';
-					} else {
-						filas[i].style.display = 'none';
-					}
+				var celdaArea = filas[i].getElementsByClassName('col-area')[0];
+				var celdaNombre = filas[i].getElementsByClassName('col-nombre')[0];
+				var textoArea = celdaArea ? celdaArea.textContent.trim().toLowerCase() : '';
+				var textoNombre = celdaNombre ? celdaNombre.textContent.trim().toLowerCase() : '';
+				var matchArea = !valorArea || textoArea.includes(valorArea);
+				var matchNombre = !valorNombre || textoNombre.includes(valorNombre);
+				if (matchArea && matchNombre) {
+					filas[i].style.display = '';
+				} else {
+					filas[i].style.display = 'none';
 				}
 			}
 		}
-		// Conectar input para filtrado en tiempo real
+		// Conectar inputs para filtrado en tiempo real
 		document.addEventListener('DOMContentLoaded', function() {
-			var inputFiltro = document.getElementById('filtroArea');
-			if (inputFiltro) {
-				inputFiltro.setAttribute('list', 'listaAreas');
-				inputFiltro.addEventListener('input', filtrarPorArea);
+			var inputFiltroArea = document.getElementById('filtroArea');
+			if (inputFiltroArea) {
+				inputFiltroArea.setAttribute('list', 'listaAreas');
+				inputFiltroArea.addEventListener('input', filtrarPorAreaYNombre);
+			}
+			var inputFiltroNombre = document.getElementById('filtroNombre');
+			if (inputFiltroNombre) {
+				inputFiltroNombre.setAttribute('list', 'listaNombres');
+				inputFiltroNombre.addEventListener('input', filtrarPorAreaYNombre);
 			}
 		});
 	</script>
