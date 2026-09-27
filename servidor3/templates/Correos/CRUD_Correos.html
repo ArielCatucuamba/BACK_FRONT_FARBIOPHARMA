@@ -212,12 +212,18 @@
 								<script>
 								// Filtrado dinámico de datalist por coincidencia parcial para el campo Nombre
 								document.addEventListener('DOMContentLoaded', function() {
+									function _normalize(s) {
+										if (!s && s !== '') return '';
+										try { return s.toString().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); } catch (e) { return s.toString().trim().toLowerCase(); }
+									}
 									var input = document.getElementById('nuevoNombre');
 									var datalist = document.getElementById('listaColaboradoresNuevo');
+									if (!datalist || !input) return; // si falta algo, salir sin romper el resto de scripts
 									var allOptions = Array.from(datalist.options).map(opt => opt.value);
 									function renderOptions(val) {
 										datalist.innerHTML = '';
-										if (!val) {
+										var normVal = _normalize(val || '');
+										if (!normVal) {
 											allOptions.forEach(function(nombre) {
 												var opt = document.createElement('option');
 												opt.value = nombre;
@@ -225,7 +231,7 @@
 											});
 										} else {
 											allOptions.forEach(function(nombre) {
-												if (nombre.toLowerCase().includes(val)) {
+												if (_normalize(nombre).includes(normVal)) {
 													var opt = document.createElement('option');
 													opt.value = nombre;
 													datalist.appendChild(opt);
@@ -236,7 +242,7 @@
 									// Inicializar con todas las opciones
 									renderOptions('');
 									input.addEventListener('input', function() {
-										var val = input.value.trim().toLowerCase();
+										var val = input.value;
 										renderOptions(val);
 									});
 									// También restaurar si el input queda vacío por otros medios
@@ -338,7 +344,7 @@
 							onclick="llenarFormularioEditarDesdeBoton(this)">
 							<i class="bi bi-pencil"></i>
 						</button>
-						<form method="POST" action="{{ url_for('eliminar_correo', id=cor[0]) }}" class="d-inline">
+						<form method="POST" action="{{ url_for('eliminar_correo', id=cor[0]) }}" class="d-inline confirm-delete-correo">
 							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i class="bi bi-trash"></i></button>
 						</form>
 					</td>
@@ -348,21 +354,24 @@
 		</table>
 	</div>
 	<script>
-		// Mapeo de colaboradores a área y departamento (relleno desde backend)
-		const colaboradoresInfo = [
-			{% for col in colaboradores_info %}
-			{
-				id: {{ col.id }},
-				nombre: "{{ col.nombre|e }}",
-				area: {id: {{ col.area_id }}, nombre: "{{ col.area_nombre|e }}"},
-				departamento: {id: {{ col.departamento_id }}, nombre: "{{ col.departamento_nombre|e }}"}
-			},
-			{% endfor %}
-		];
+		// Mapeo de colaboradores a área y departamento (serializado como JSON seguro)
+		const colaboradoresInfo = {{ colaboradores_info | tojson | safe }};
 
-		document.getElementById('nuevoNombre').addEventListener('input', function() {
-			const nombre = this.value;
-			const col = colaboradoresInfo.find(c => c.nombre === nombre);
+		// Normaliza cadenas: quita tildes/diacríticos, trim y pasa a minúsculas.
+		function normalizeStr(s) {
+			if (!s && s !== '') return '';
+			try {
+				return s.toString().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+			} catch (e) {
+				try { return s.toString().trim().toLowerCase(); } catch (e2) { return ''; }
+			}
+		}
+
+		var _nuevoNombre = document.getElementById('nuevoNombre');
+		if (_nuevoNombre) {
+			_nuevoNombre.addEventListener('input', function() {
+				const nombre = this.value;
+				const col = colaboradoresInfo.find(function(c){ return normalizeStr(c.nombre) === normalizeStr(nombre); });
 			const areaSelect = document.getElementById('nuevaArea');
 			const depSelect = document.getElementById('nuevoDepartamento');
 			const areaHidden = document.getElementById('nuevaAreaHidden');
@@ -370,15 +379,21 @@
 			areaSelect.innerHTML = '<option value="">Seleccione un área</option>';
 			depSelect.innerHTML = '<option value="">Seleccione un departamento</option>';
 			if (col) {
-				areaSelect.innerHTML += `<option value="${col.area.id}" selected>${col.area.nombre}</option>`;
-				depSelect.innerHTML += `<option value="${col.departamento.id}" selected>${col.departamento.nombre}</option>`;
-				if (areaHidden) areaHidden.value = col.area.id;
-				if (depHidden) depHidden.value = col.departamento.id;
+					// soportar estructura anidada { area: { id,nombre } } o plana { area_id, area_nombre }
+					var areaId = col.area && (col.area.id || col.area.ID_AREAS || col.area.ID) ? (col.area.id || col.area.ID_AREAS || col.area.ID) : (col.area_id || col.areaId || '');
+					var areaNombre = col.area && (col.area.nombre || col.area.AREA) ? (col.area.nombre || col.area.AREA) : (col.area_nombre || col.areaNombre || '');
+					var depId = col.departamento && (col.departamento.id || col.departamento.ID_DEPARTAMENTOS || col.departamento.ID) ? (col.departamento.id || col.departamento.ID_DEPARTAMENTOS || col.departamento.ID) : (col.departamento_id || col.departamentoId || '');
+					var depNombre = col.departamento && (col.departamento.nombre || col.departamento.DEPARTAMENTO) ? (col.departamento.nombre || col.departamento.DEPARTAMENTO) : (col.departamento_nombre || col.departamentoNombre || '');
+					if (areaId && areaSelect) areaSelect.innerHTML += `<option value="${areaId}" selected>${areaNombre}</option>`;
+					if (depId && depSelect) depSelect.innerHTML += `<option value="${depId}" selected>${depNombre}</option>`;
+					if (areaHidden) areaHidden.value = areaId;
+					if (depHidden) depHidden.value = depId;
 			} else {
 				if (areaHidden) areaHidden.value = '';
 				if (depHidden) depHidden.value = '';
 			}
-		});
+			});
+		}
 		// Sincronizar campos ocultos al abrir el modal de agregar
 		var modalAgregar = document.getElementById('modalAgregar');
 		if (modalAgregar) {
@@ -392,7 +407,7 @@
 			});
 		}
 		// Sincronizar SIEMPRE justo antes de enviar el formulario de agregar
-		var formNuevo = document.querySelector('form[action="{{ url_for('crud_correos') }}"]');
+		var formNuevo = document.querySelector("form[action='{{ url_for('crud_correos') }}']");
 		if (formNuevo) {
 			formNuevo.addEventListener('submit', function(e) {
 				var areaHidden = document.getElementById('nuevaAreaHidden');
@@ -422,22 +437,28 @@
 			var depSelect = document.getElementById('editarDepartamento');
 			if (areaHidden) areaHidden.value = areaId;
 			if (depHidden) depHidden.value = depId;
-			// Autocompletar selects de área y departamento según el colaborador
-			var col = colaboradoresInfo.find(c => c.nombre === nombre);
+			// Autocompletar selects de área y departamento según el colaborador (comparación normalizada)
+			var col = colaboradoresInfo.find(function(c){ return normalizeStr(c.nombre) === normalizeStr(nombre); });
 			areaSelect.innerHTML = '<option value="">Seleccione un área</option>';
 			depSelect.innerHTML = '<option value="">Seleccione un departamento</option>';
 			if (col) {
-				areaSelect.innerHTML += `<option value="${col.area.id}" selected>${col.area.nombre}</option>`;
-				depSelect.innerHTML += `<option value="${col.departamento.id}" selected>${col.departamento.nombre}</option>`;
-				if (areaHidden) areaHidden.value = col.area.id;
-				if (depHidden) depHidden.value = col.departamento.id;
+				var areaId = col.area && (col.area.id || col.area.ID_AREAS || col.area.ID) ? (col.area.id || col.area.ID_AREAS || col.area.ID) : (col.area_id || col.areaId || '');
+				var areaNombre = col.area && (col.area.nombre || col.area.AREA) ? (col.area.nombre || col.area.AREA) : (col.area_nombre || col.areaNombre || '');
+				var depId = col.departamento && (col.departamento.id || col.departamento.ID_DEPARTAMENTOS || col.departamento.ID) ? (col.departamento.id || col.departamento.ID_DEPARTAMENTOS || col.departamento.ID) : (col.departamento_id || col.departamentoId || '');
+				var depNombre = col.departamento && (col.departamento.nombre || col.departamento.DEPARTAMENTO) ? (col.departamento.nombre || col.departamento.DEPARTAMENTO) : (col.departamento_nombre || col.departamentoNombre || '');
+				if (areaId && areaSelect) areaSelect.innerHTML += `<option value="${areaId}" selected>${areaNombre}</option>`;
+				if (depId && depSelect) depSelect.innerHTML += `<option value="${depId}" selected>${depNombre}</option>`;
+				if (areaHidden) areaHidden.value = areaId;
+				if (depHidden) depHidden.value = depId;
 			}
 		}
 
 		// Autocompletar área y departamento al cambiar el nombre en editar
-		document.getElementById('editarNombre').addEventListener('input', function() {
-			const nombre = this.value;
-			const col = colaboradoresInfo.find(c => c.nombre === nombre);
+		var _editarNombre = document.getElementById('editarNombre');
+		if (_editarNombre) {
+			_editarNombre.addEventListener('input', function() {
+				const nombre = this.value;
+				const col = colaboradoresInfo.find(function(c){ return normalizeStr(c.nombre) === normalizeStr(nombre); });
 			const areaSelect = document.getElementById('editarArea');
 			const depSelect = document.getElementById('editarDepartamento');
 			const areaHidden = document.getElementById('editarAreaHidden');
@@ -445,15 +466,20 @@
 			areaSelect.innerHTML = '<option value="">Seleccione un área</option>';
 			depSelect.innerHTML = '<option value="">Seleccione un departamento</option>';
 			if (col) {
-				areaSelect.innerHTML += `<option value="${col.area.id}" selected>${col.area.nombre}</option>`;
-				depSelect.innerHTML += `<option value="${col.departamento.id}" selected>${col.departamento.nombre}</option>`;
-				if (areaHidden) areaHidden.value = col.area.id;
-				if (depHidden) depHidden.value = col.departamento.id;
+				var areaId = col.area && (col.area.id || col.area.ID_AREAS || col.area.ID) ? (col.area.id || col.area.ID_AREAS || col.area.ID) : (col.area_id || col.areaId || '');
+				var areaNombre = col.area && (col.area.nombre || col.area.AREA) ? (col.area.nombre || col.area.AREA) : (col.area_nombre || col.areaNombre || '');
+				var depId = col.departamento && (col.departamento.id || col.departamento.ID_DEPARTAMENTOS || col.departamento.ID) ? (col.departamento.id || col.departamento.ID_DEPARTAMENTOS || col.departamento.ID) : (col.departamento_id || col.departamentoId || '');
+				var depNombre = col.departamento && (col.departamento.nombre || col.departamento.DEPARTAMENTO) ? (col.departamento.nombre || col.departamento.DEPARTAMENTO) : (col.departamento_nombre || col.departamentoNombre || '');
+				if (areaId && areaSelect) areaSelect.innerHTML += `<option value="${areaId}" selected>${areaNombre}</option>`;
+				if (depId && depSelect) depSelect.innerHTML += `<option value="${depId}" selected>${depNombre}</option>`;
+				if (areaHidden) areaHidden.value = areaId;
+				if (depHidden) depHidden.value = depId;
 			} else {
 				if (areaHidden) areaHidden.value = '';
 				if (depHidden) depHidden.value = '';
 			}
-		});
+			});
+		}
 		// Sincronizar campos ocultos al abrir el modal de editar
 		var modalEditar = document.getElementById('modalEditar');
 		if (modalEditar) {
@@ -503,40 +529,26 @@
 			}, true);
 		}
 		function filtrarPorArea() {
-			var valor = document.getElementById('filtroArea').value.trim().toLowerCase();
-			var tabla = document.getElementById('tablaCorreos');
-			var filas = tabla.getElementsByTagName('tr');
-			for (var i = 1; i < filas.length; i++) { // i=1 para saltar el encabezado
-				var celda = filas[i].getElementsByClassName('cor-area')[0];
-				if (celda) {
-					var texto = celda.textContent.trim().toLowerCase();
-					if (!valor || texto.includes(valor)) {
-						filas[i].style.display = '';
-					} else {
-						filas[i].style.display = 'none';
-					}
-				}
-			}
+			// compat shim — usa el filtrado combinado
+			filtrarPorAreaYNombre();
 		}
 
 		// Filtrado combinado por área y nombre
 		function filtrarPorAreaYNombre() {
-			var valorArea = document.getElementById('filtroArea').value.trim().toLowerCase();
-			var valorNombre = document.getElementById('filtroNombre').value.trim().toLowerCase();
+			var valorArea = normalizeStr((document.getElementById('filtroArea') || {}).value || '');
+			var valorNombre = normalizeStr((document.getElementById('filtroNombre') || {}).value || '');
 			var tabla = document.getElementById('tablaCorreos');
+			if (!tabla) return;
 			var filas = tabla.getElementsByTagName('tr');
-			for (var i = 1; i < filas.length; i++) { // i=1 para saltar el encabezado
+			for (var i = 1; i < filas.length; i++) {
 				var celdaArea = filas[i].getElementsByClassName('cor-area')[0];
 				var celdaNombre = filas[i].getElementsByClassName('cor-nombre')[0];
-				if (celdaArea && celdaNombre) {
-					var textoArea = celdaArea.textContent.trim().toLowerCase();
-					var textoNombre = celdaNombre.textContent.trim().toLowerCase();
-					if ((!valorArea || textoArea.includes(valorArea)) && (!valorNombre || textoNombre.includes(valorNombre))) {
-						filas[i].style.display = '';
-					} else {
-						filas[i].style.display = 'none';
-					}
-				}
+				var textoArea = celdaArea ? normalizeStr(celdaArea.textContent) : '';
+				var textoNombre = celdaNombre ? normalizeStr(celdaNombre.textContent) : '';
+				var mostrar = true;
+				if (valorArea && !textoArea.includes(valorArea)) mostrar = false;
+				if (valorNombre && !textoNombre.includes(valorNombre)) mostrar = false;
+				filas[i].style.display = mostrar ? '' : 'none';
 			}
 		}
 		document.addEventListener('DOMContentLoaded', function() {
@@ -545,46 +557,72 @@
 			if (inputFiltro) {
 				inputFiltro.setAttribute('list', 'listaAreas');
 				inputFiltro.addEventListener('input', filtrarPorAreaYNombre);
+				inputFiltro.addEventListener('change', filtrarPorAreaYNombre);
 			}
 			var inputFiltroNombre = document.getElementById('filtroNombre');
 			if (inputFiltroNombre) {
+				inputFiltroNombre.setAttribute('list', 'listaNombres');
 				inputFiltroNombre.addEventListener('input', filtrarPorAreaYNombre);
+				inputFiltroNombre.addEventListener('keyup', filtrarPorAreaYNombre);
+				inputFiltroNombre.addEventListener('change', filtrarPorAreaYNombre);
 			}
+			// aplicar filtro inicial
+			filtrarPorAreaYNombre();
+			// Confirmación antes de eliminar un correo
+			var deleteForms = document.querySelectorAll('form.confirm-delete-correo');
+			deleteForms.forEach(function(form) {
+				form.addEventListener('submit', function(e) {
+					var tr = form.closest('tr');
+					var nombre = '';
+					if (tr) {
+						var nameCell = tr.querySelector('.cor-nombre');
+						nombre = nameCell ? nameCell.textContent.trim() : '';
+					}
+					var mensaje = '¿Confirma que desea eliminar el correo de "' + nombre + '"? Esta acción no se puede deshacer.';
+					if (!confirm(mensaje)) {
+						e.preventDefault();
+					}
+				});
+			});
     // --- Lógica para el formulario de AGREGAR ---
-    var inputNuevo = document.getElementById('nuevoNombre');
-    var datalistNuevo = document.getElementById('listaColaboradoresNuevo');
-    var allOptionsNuevo = Array.from(datalistNuevo.options).map(opt => opt.value);
-    function renderOptionsNuevo(val) {
-        datalistNuevo.innerHTML = '';
-        if (!val) {
-            allOptionsNuevo.forEach(function(nombre) {
-                var opt = document.createElement('option');
-                opt.value = nombre;
-                datalistNuevo.appendChild(opt);
-            });
-        } else {
-            allOptionsNuevo.forEach(function(nombre) {
-                if (nombre.toLowerCase().includes(val)) {
-                    var opt = document.createElement('option');
-                    opt.value = nombre;
-                    datalistNuevo.appendChild(opt);
-                }
-            });
-        }
-    }
-    renderOptionsNuevo('');
-	inputNuevo.addEventListener('input', function() {
-		var val = inputNuevo.value.trim().toLowerCase();
-		renderOptionsNuevo(val);
-		// Sincronizar ID_COLABORADOR
-		var col = colaboradoresInfo.find(c => c.nombre === inputNuevo.value);
-		var idColaboradorHidden = document.getElementById('nuevoIdColaborador');
-		if (col && idColaboradorHidden) {
-			idColaboradorHidden.value = col.id;
-		} else if (idColaboradorHidden) {
-			idColaboradorHidden.value = '';
+	var inputNuevo = document.getElementById('nuevoNombre');
+	var datalistNuevo = document.getElementById('listaColaboradoresNuevo');
+	var allOptionsNuevo = datalistNuevo ? Array.from(datalistNuevo.options).map(opt => opt.value) : [];
+	function renderOptionsNuevo(val) {
+		if (!datalistNuevo) return;
+		datalistNuevo.innerHTML = '';
+		var normVal = normalizeStr(val || '');
+		if (!normVal) {
+			allOptionsNuevo.forEach(function(nombre) {
+				var opt = document.createElement('option');
+				opt.value = nombre;
+				datalistNuevo.appendChild(opt);
+			});
+		} else {
+			allOptionsNuevo.forEach(function(nombre) {
+				if (normalizeStr(nombre).includes(normVal)) {
+					var opt = document.createElement('option');
+					opt.value = nombre;
+					datalistNuevo.appendChild(opt);
+				}
+			});
 		}
-	});
+	}
+	renderOptionsNuevo('');
+	if (inputNuevo) {
+		inputNuevo.addEventListener('input', function() {
+			var val = inputNuevo.value;
+			renderOptionsNuevo(val);
+			// Sincronizar ID_COLABORADOR (comparación normalizada)
+			var col = colaboradoresInfo.find(function(c){ return normalizeStr(c.nombre) === normalizeStr(inputNuevo.value); });
+			var idColaboradorHidden = document.getElementById('nuevoIdColaborador');
+			if (col && idColaboradorHidden) {
+				idColaboradorHidden.value = col.id;
+			} else if (idColaboradorHidden) {
+				idColaboradorHidden.value = '';
+			}
+		});
+	}
 	inputNuevo.addEventListener('change', function() {
 		if (!inputNuevo.value.trim()) renderOptionsNuevo('');
 		// Sincronizar ID_COLABORADOR también en change
@@ -609,40 +647,44 @@
 	});
 
     // --- Lógica para el formulario de EDITAR ---
-    var inputEditar = document.getElementById('editarNombre');
-    var datalistEditar = document.getElementById('listaColaboradoresEditar');
-    var allOptionsEditar = Array.from(datalistEditar.options).map(opt => opt.value);
-    function renderOptionsEditar(val) {
-        datalistEditar.innerHTML = '';
-        if (!val) {
-            allOptionsEditar.forEach(function(nombre) {
-                var opt = document.createElement('option');
-                opt.value = nombre;
-                datalistEditar.appendChild(opt);
-            });
-        } else {
-            allOptionsEditar.forEach(function(nombre) {
-                if (nombre.toLowerCase().includes(val)) {
-                    var opt = document.createElement('option');
-                    opt.value = nombre;
-                    datalistEditar.appendChild(opt);
-                }
-            });
-        }
-    }
-    renderOptionsEditar('');
-    inputEditar.addEventListener('input', function() {
-        var val = inputEditar.value.trim().toLowerCase();
-        renderOptionsEditar(val);
-        // Sincronizar ID_COLABORADOR
-        var col = colaboradoresInfo.find(c => c.nombre === inputEditar.value);
-        var idColaboradorHidden = document.getElementById('editarIdColaborador');
-        if (col && idColaboradorHidden) {
-            idColaboradorHidden.value = col.id;
-        } else if (idColaboradorHidden) {
-            idColaboradorHidden.value = '';
-        }
-    });
+	var inputEditar = document.getElementById('editarNombre');
+	var datalistEditar = document.getElementById('listaColaboradoresEditar');
+	var allOptionsEditar = datalistEditar ? Array.from(datalistEditar.options).map(opt => opt.value) : [];
+	function renderOptionsEditar(val) {
+		if (!datalistEditar) return;
+		datalistEditar.innerHTML = '';
+		var normVal = normalizeStr(val || '');
+		if (!normVal) {
+			allOptionsEditar.forEach(function(nombre) {
+				var opt = document.createElement('option');
+				opt.value = nombre;
+				datalistEditar.appendChild(opt);
+			});
+		} else {
+			allOptionsEditar.forEach(function(nombre) {
+				if (normalizeStr(nombre).includes(normVal)) {
+					var opt = document.createElement('option');
+					opt.value = nombre;
+					datalistEditar.appendChild(opt);
+				}
+			});
+		}
+	}
+	renderOptionsEditar('');
+	if (inputEditar) {
+		inputEditar.addEventListener('input', function() {
+			var val = inputEditar.value;
+			renderOptionsEditar(val);
+			// Sincronizar ID_COLABORADOR (comparación normalizada)
+			var col = colaboradoresInfo.find(function(c){ return normalizeStr(c.nombre) === normalizeStr(inputEditar.value); });
+			var idColaboradorHidden = document.getElementById('editarIdColaborador');
+			if (col && idColaboradorHidden) {
+				idColaboradorHidden.value = col.id;
+			} else if (idColaboradorHidden) {
+				idColaboradorHidden.value = '';
+			}
+		});
+	}
     inputEditar.addEventListener('change', function() {
         if (!inputEditar.value.trim()) renderOptionsEditar('');
     });

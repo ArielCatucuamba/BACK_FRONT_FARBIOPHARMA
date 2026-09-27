@@ -113,7 +113,7 @@
                 <li><button class="menu-btn active" onclick="location.href='/vcelulares'" type="button"><i
                             class="bi bi-phone"></i> Celulares</button></li>
                 <li><button class="menu-btn" onclick="location.href='/vcorreos'" type="button"><i
-                            class="bi bi-envelope"></i> Correos <span class="menu-badge">3</span></button></li>
+                            class="bi bi-envelope"></i> Correos </button></li>
                 <li><button class="menu-btn" onclick="location.href='/login'" type="button"><i
                             class="bi bi-person-circle"></i> Iniciar sesión</button></li>
             </ul>
@@ -123,18 +123,18 @@
             <div class="d-flex gap-3 mb-4" style="justify-content:left;">
                 <input type="text" id="filtroNombre" class="form-control shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" placeholder="Filtrar por Nombre" onkeyup="filtrarTabla()">
                 <input type="text" id="filtroCelular" class="form-control shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" placeholder="Filtrar por Celular" onkeyup="filtrarTabla()">
+                <select id="filtroDepartamento" class="form-select shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" onchange="updateAreaOptionsCel(this.value); filtrarTabla();">
+                    <option value="">Filtrar por Departamento</option>
+                    {% set deps_unicos = celulares | map(attribute=4) | unique | list %}
+                    {% for dep in deps_unicos %}
+                        {% if dep %}<option value="{{ dep }}">{{ dep }}</option>{% endif %}
+                    {% endfor %}
+                </select>
                 <select id="filtroArea" class="form-select shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" onchange="filtrarTabla()">
                     <option value="">Filtrar por Área</option>
                     {% set areas_unicas = celulares | map(attribute=3) | unique | list %}
                     {% for area in areas_unicas %}
                         {% if area %}<option value="{{ area }}">{{ area }}</option>{% endif %}
-                    {% endfor %}
-                </select>
-                <select id="filtroDepartamento" class="form-select shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" onchange="filtrarTabla()">
-                    <option value="">Filtrar por Departamento</option>
-                    {% set deps_unicos = celulares | map(attribute=4) | unique | list %}
-                    {% for dep in deps_unicos %}
-                        {% if dep %}<option value="{{ dep }}">{{ dep }}</option>{% endif %}
                     {% endfor %}
                 </select>
             </div>
@@ -164,17 +164,28 @@
             </div>
         </div>
         <script>
+            // Normaliza cadenas: quita tildes/diacríticos, trim y pasa a minúsculas.
+            function normalizeStr(s) {
+                if (!s && s !== '') return '';
+                try {
+                    return s.toString().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+                } catch (e) {
+                    // fallback simple
+                    return s.toString().trim().toLowerCase();
+                }
+            }
+
             function filtrarTabla() {
-                var nombre = document.getElementById('filtroNombre').value.toLowerCase();
-                var celular = document.getElementById('filtroCelular').value.toLowerCase();
-                var area = document.getElementById('filtroArea').value;
-                var departamento = document.getElementById('filtroDepartamento').value;
+                var nombre = normalizeStr(document.getElementById('filtroNombre').value);
+                var celular = normalizeStr(document.getElementById('filtroCelular').value);
+                var area = normalizeStr(document.getElementById('filtroArea').value);
+                var departamento = normalizeStr(document.getElementById('filtroDepartamento').value);
                 var filas = document.querySelectorAll('#tablaCelulares tr');
                 filas.forEach(function (fila) {
-                    var nombreCelda = fila.querySelector('.cel-nombre').textContent.trim().toLowerCase();
-                    var celularCelda = fila.querySelector('.cel-celular').textContent.trim().toLowerCase();
-                    var areaCelda = fila.querySelector('.cel-area').textContent.trim();
-                    var depCelda = fila.querySelector('.cel-departamento').textContent.trim();
+                    var nombreCelda = normalizeStr(fila.querySelector('.cel-nombre').textContent);
+                    var celularCelda = normalizeStr(fila.querySelector('.cel-celular').textContent);
+                    var areaCelda = normalizeStr(fila.querySelector('.cel-area').textContent);
+                    var depCelda = normalizeStr(fila.querySelector('.cel-departamento').textContent);
                     var mostrar = true;
                     if (nombre && !nombreCelda.includes(nombre)) mostrar = false;
                     if (celular && !celularCelda.includes(celular)) mostrar = false;
@@ -183,6 +194,85 @@
                     fila.style.display = mostrar ? '' : 'none';
                 });
             }
+        </script>
+
+        <script>
+            // --- Dependent select: actualizar 'Área' según 'Departamento' para Celulares ---
+            function buildDeptAreaMapCel() {
+                var map = {};
+                var filas = document.querySelectorAll('#tablaCelulares tr');
+                filas.forEach(function (fila) {
+                    var area = fila.querySelector('.cel-area').textContent.trim();
+                    var dep = fila.querySelector('.cel-departamento').textContent.trim();
+                    if (!dep) return;
+                    if (!map[dep]) map[dep] = new Set();
+                    if (area) map[dep].add(area);
+                });
+                return map;
+            }
+
+            var FULL_AREAS_CEL = [];
+            var DEPT_AREA_MAP_CEL = {};
+
+            function initDependentSelectsCel() {
+                var areaSelect = document.getElementById('filtroArea');
+                // Guardar todas las áreas inicialmente
+                FULL_AREAS_CEL = Array.from(areaSelect.querySelectorAll('option'))
+                    .map(function(opt){ return opt.value; })
+                    .filter(function(v){ return v !== ''; });
+
+                var map = buildDeptAreaMapCel();
+                DEPT_AREA_MAP_CEL = {};
+                for (var k in map) {
+                    if (Object.prototype.hasOwnProperty.call(map, k)) {
+                        // clave normalizada (sin tildes, minúscula)
+                        var nk = normalizeStr(k);
+                        // almacenar áreas tal cual (para mostrar), pero al hacer lookup usaremos la clave normalizada
+                        DEPT_AREA_MAP_CEL[nk] = Array.from(map[k]);
+                    }
+                }
+
+                var depSelect = document.getElementById('filtroDepartamento');
+                depSelect.addEventListener('change', function(){
+                    updateAreaOptionsCel(this.value);
+                    filtrarTabla();
+                });
+                // inicializar áreas según el departamento que pueda venir preseleccionado
+                updateAreaOptionsCel(depSelect.value);
+            }
+
+            function updateAreaOptionsCel(selectedDept) {
+                var areaSelect = document.getElementById('filtroArea');
+                var current = areaSelect.value;
+                while (areaSelect.firstChild) areaSelect.removeChild(areaSelect.firstChild);
+                var opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = 'Filtrar por Área';
+                areaSelect.appendChild(opt);
+
+                var list = [];
+                if (!selectedDept) {
+                    list = FULL_AREAS_CEL.slice();
+                } else {
+                    var nk = normalizeStr(selectedDept);
+                    if (DEPT_AREA_MAP_CEL[nk]) list = DEPT_AREA_MAP_CEL[nk].slice();
+                }
+                list.sort();
+                list.forEach(function(a){
+                    var o = document.createElement('option'); o.value = a; o.textContent = a;
+                    areaSelect.appendChild(o);
+                });
+
+                if (current && Array.from(areaSelect.options).some(function(o){ return o.value === current; })) {
+                    areaSelect.value = current;
+                } else {
+                    areaSelect.value = '';
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', function(){
+                initDependentSelectsCel();
+            });
         </script>
     </div>
     </div>

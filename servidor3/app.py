@@ -1,3 +1,22 @@
+"""
+Shim: some Python versions (very new ones) remove or change
+`pkgutil.get_loader`. Older Flask releases call that function.
+If the running Python's `pkgutil` module doesn't provide
+`get_loader`, provide a small compatibility shim that uses
+importlib to emulate the behavior. This must run before
+importing Flask so Flask's internal imports work.
+"""
+import pkgutil
+import importlib.util
+if not hasattr(pkgutil, "get_loader"):
+    def _get_loader(module_name):
+        try:
+            spec = importlib.util.find_spec(module_name)
+            return spec.loader if spec is not None else None
+        except Exception:
+            return None
+    pkgutil.get_loader = _get_loader
+
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_mysqldb import MySQL
 import bcrypt
@@ -11,16 +30,21 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "tu_clave_secreta_aqui")
 
 # Configuración de la base de datos MySQL
-
+app.config['MYSQL_HOST'] = os.getenv("MYSQL_HOST", "maestro1")
+app.config['MYSQL_USER'] = os.getenv("MYSQL_USER", "root")
+app.config['MYSQL_PASSWORD'] = os.getenv("MYSQL_PASSWORD", "F4rb10PH4rm4")
+app.config['MYSQL_DB'] = os.getenv("MYSQL_DB", "db_informacion")
+app.config['MYSQL_PORT'] = int(os.getenv("MYSQL_PORT", 3306))
 
 # Inicializar la base de datos
 mysql = MySQL(app)
 
 def wait_for_db():
     """Esperar a que la base de datos esté disponible"""
-    max_retries = 30
+    # Aumentamos tolerancia: algunas inicializaciones de MySQL tardan más.
+    max_retries = 60
     retry_count = 0
-    
+
     while retry_count < max_retries:
         try:
             with app.app_context():
@@ -31,10 +55,13 @@ def wait_for_db():
                 return True
         except Exception as e:
             retry_count += 1
-            print(f"⏳ Esperando base de datos... intento {retry_count}/{max_retries}")
-            time.sleep(2)
-    
-    raise Exception("❌ No se pudo conectar a la base de datos después de varios intentos")
+            # Mostrar error completo en cada intento para facilitar diagnóstico.
+            print(f"⏳ Esperando base de datos... intento {retry_count}/{max_retries} - error: {e!r}")
+            # Espera ligeramente mayor para no saturar logs ni CPU
+            time.sleep(3)
+
+    # Si no pudimos conectar, lanzar excepción con contexto
+    raise Exception(f"❌ No se pudo conectar a la base de datos después de {max_retries} intentos")
 
 def init_db():
     """Inicializar las tablas de la base de datos"""
@@ -56,8 +83,7 @@ def init_db():
         cur.execute("""
             CREATE TABLE IF NOT EXISTS areas (
                 ID_AREAS INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                AREA VARCHAR(100) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                AREA VARCHAR(100) NOT NULL
             )
         """)
 
@@ -753,13 +779,56 @@ def crud_extensiones():
         })
     # Crear
     if request.method == 'POST':
-        id_colaborador = request.form.get('id_colaborador')
-        extension = request.form.get('extension')
-        area = request.form.get('area')
-        departamento = request.form.get('departamento')
-        if id_colaborador and extension:
-            cur.execute("INSERT INTO extensiones (ID_COLABORADOR, EXTENSION, AREA, DEPARTAMENTO) VALUES (%s, %s, %s, %s)", (id_colaborador, extension, area, departamento))
+        id_colaborador = (request.form.get('id_colaborador') or '').strip()
+        extension = (request.form.get('extension') or '').strip()
+        area = (request.form.get('area') or '').strip()
+        departamento = (request.form.get('departamento') or '').strip()
+
+        # Validaciones y normalizaciones: convertir cadenas vacías a None para insert NULL
+        if not id_colaborador:
+            flash('Debes seleccionar un colaborador válido antes de agregar la extensión.', 'danger')
+            cur.close()
+            return redirect(url_for('crud_extensiones'))
+
+        try:
+            id_col = int(id_colaborador)
+        except Exception:
+            flash('ID de colaborador inválido.', 'danger')
+            cur.close()
+            return redirect(url_for('crud_extensiones'))
+
+        try:
+            ext_val = int(extension)
+        except Exception:
+            flash('La extensión debe ser un número válido.', 'danger')
+            cur.close()
+            return redirect(url_for('crud_extensiones'))
+
+        area_val = None
+        if area != '':
+            try:
+                area_val = int(area)
+            except Exception:
+                # si no es un entero válido, lo ignoramos y lo dejamos NULL
+                area_val = None
+
+        departamento_val = None
+        if departamento != '':
+            try:
+                departamento_val = int(departamento)
+            except Exception:
+                departamento_val = None
+
+        try:
+            cur.execute(
+                "INSERT INTO extensiones (ID_COLABORADOR, EXTENSION, AREA, DEPARTAMENTO) VALUES (%s, %s, %s, %s)",
+                (id_col, ext_val, area_val, departamento_val)
+            )
             mysql.connection.commit()
+            flash('Extensión agregada correctamente.', 'success')
+        except Exception as e:
+            mysql.connection.rollback()
+            flash('Error al agregar la extensión: ' + str(e), 'danger')
     # Leer: mostrar área y departamento actual del colaborador relacionado
     cur.execute("""
         SELECT e.ID_EXTENSIONES, c.NOMBRE, e.EXTENSION, a.AREA, d.DEPARTAMENTO, cg.AREA, cg.DEPARTAMENTO, e.ID_COLABORADOR
@@ -777,16 +846,58 @@ def crud_extensiones():
 # Editar extension
 @app.route('/extensiones/editar/<int:id>', methods=['POST'])
 def editar_extension(id):
+    # Protección de sesión
     if 'user_id' not in session:
+        flash('Debes iniciar sesión para realizar esta acción.', 'warning')
         return redirect(url_for('login'))
-    id_colaborador = request.form.get('id_colaborador')
-    extension = request.form.get('extension')
-    area = request.form.get('area')
-    departamento = request.form.get('departamento')
-    cur = mysql.connection.cursor()
-    cur.execute("UPDATE extensiones SET ID_COLABORADOR = %s, EXTENSION = %s, AREA = %s, DEPARTAMENTO = %s WHERE ID_EXTENSIONES = %s", (id_colaborador, extension, area, departamento, id))
-    mysql.connection.commit()
-    cur.close()
+
+    # Obtener valores del formulario
+    id_colaborador = request.form.get('id_colaborador', '').strip()
+    extension = request.form.get('extension', '').strip()
+    area = request.form.get('area', '').strip()
+    departamento = request.form.get('departamento', '').strip()
+
+    # Validaciones básicas
+    if not extension:
+        flash('La extensión no puede estar vacía.', 'danger')
+        return redirect(url_for('crud_extensiones'))
+    if not extension.isdigit():
+        flash('La extensión debe ser un número válido.', 'danger')
+        return redirect(url_for('crud_extensiones'))
+
+    # Si el id_colaborador viene vacío o no numérico, conservar el actual de la fila
+    if not id_colaborador or not id_colaborador.isdigit():
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT ID_COLABORADOR FROM extensiones WHERE ID_EXTENSIONES = %s", (id,))
+        row = cur.fetchone()
+        cur.close()
+        if row and row[0] is not None:
+            id_colaborador = row[0]
+        else:
+            flash('No se pudo determinar el colaborador asociado a la extensión.', 'danger')
+            return redirect(url_for('crud_extensiones'))
+
+    # Normalizar valores opcionales (usar NULL en BD si vacío)
+    area_val = area if area != '' else None
+    dep_val = departamento if departamento != '' else None
+
+    # Ejecutar actualización
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute(
+            "UPDATE extensiones SET ID_COLABORADOR = %s, EXTENSION = %s, AREA = %s, DEPARTAMENTO = %s WHERE ID_EXTENSIONES = %s",
+            (id_colaborador, int(extension), area_val, dep_val, id)
+        )
+        mysql.connection.commit()
+        cur.close()
+        flash('Extensión editada correctamente.', 'success')
+    except Exception as e:
+        try:
+            cur.close()
+        except Exception:
+            pass
+        flash(f'Ocurrió un error al editar la extensión: {e}', 'danger')
+
     return redirect(url_for('crud_extensiones'))
 
 # Eliminar extension

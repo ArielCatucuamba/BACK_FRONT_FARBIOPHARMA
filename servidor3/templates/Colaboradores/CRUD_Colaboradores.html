@@ -470,7 +470,7 @@ function cerrarAlertaExito() {
 							onclick="llenarFormularioEditarDesdeBoton(this)">
 							<i class="bi bi-pencil"></i>
 						</button>
-						<form method="POST" action="{{ url_for('eliminar_colaborador', id=col[0]) }}" class="d-inline">
+						<form method="POST" action="{{ url_for('eliminar_colaborador', id=col[0]) }}" class="d-inline confirm-delete-colaborador">
 							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i class="bi bi-trash"></i></button>
 						</form>
 					</td>
@@ -590,6 +590,26 @@ document.addEventListener('DOMContentLoaded', function() {
 			syncHiddenFieldsEdit();
 		}, true);
 	}
+});
+</script>
+<script>
+// Confirmación antes de eliminar un colaborador
+document.addEventListener('DOMContentLoaded', function() {
+	var deleteForms = document.querySelectorAll('form.confirm-delete-colaborador');
+	deleteForms.forEach(function(form) {
+		form.addEventListener('submit', function(e) {
+			var tr = form.closest('tr');
+			var nombre = '';
+			if (tr) {
+				var nameCell = tr.querySelector('.col-nombre');
+				nombre = nameCell ? nameCell.textContent.trim() : '';
+			}
+			var mensaje = '¿Confirma que desea eliminar al colaborador "' + nombre + '"? Esta acción no se puede deshacer.';
+			if (!confirm(mensaje)) {
+				e.preventDefault();
+			}
+		});
+	});
 });
 </script>
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">

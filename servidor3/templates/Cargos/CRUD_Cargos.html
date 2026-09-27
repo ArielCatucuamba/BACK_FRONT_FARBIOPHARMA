@@ -258,10 +258,10 @@
 							onclick="llenarFormularioEditarDesdeBoton(this)">
 							<i class="bi bi-pencil"></i>
 						</button>
-						<form method="POST" action="{{ url_for('eliminar_cargo', id=cargo[0]) }}" class="d-inline">
+						<form method="POST" action="{{ url_for('eliminar_cargo', id=cargo[0]) }}" class="d-inline confirm-delete-cargo">
 							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i
-									class="bi bi-trash"></i></button>
-						</form>
+														class="bi bi-trash"></i></button>
+							</form>
 					</td>
 				</tr>
 				{% endfor %}
@@ -313,6 +313,23 @@
 				inputFiltroCargo.setAttribute('list', 'listaCargos');
 				inputFiltroCargo.addEventListener('input', filtrarPorAreaYCargo);
 			}
+
+			// Confirmación antes de eliminar un cargo
+			var deleteForms = document.querySelectorAll('form.confirm-delete-cargo');
+			deleteForms.forEach(function(form) {
+				form.addEventListener('submit', function(e) {
+					var tr = form.closest('tr');
+					var descripcion = '';
+					if (tr) {
+						var descCell = tr.querySelector('.cargo-descripcion');
+						descripcion = descCell ? descCell.textContent.trim() : '';
+					}
+					var mensaje = '¿Confirma que desea eliminar el cargo "' + descripcion + '"? Esta acción no se puede deshacer.';
+					if (!confirm(mensaje)) {
+						e.preventDefault();
+					}
+				});
+			});
 		});
 	</script>
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">

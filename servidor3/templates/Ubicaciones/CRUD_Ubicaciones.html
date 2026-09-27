@@ -112,6 +112,7 @@
 						<option value="Planta Central">Planta Central</option>
 						<option value="Oyambarillo">Oyambarillo</option>
 						<option value="El Carmen">El Carmen</option>
+						<option value="JAPONES">JAPONES</option>
 					</datalist>
 				</div>
 				<div class="col-auto">
@@ -172,6 +173,7 @@
 									<option value="Planta Central">Planta Central</option>
 									<option value="Oyambarillo">Oyambarillo</option>
 									<option value="El Carmen">El Carmen</option>
+									<option value="JAPONES">JAPONES</option>
 								</select>
 							</div>
 							<div class="mb-3">
@@ -247,7 +249,7 @@
 							data-direccion="{{ ubi[3]|e }}" onclick="llenarFormularioEditarDesdeBoton(this)">
 							<i class="bi bi-pencil"></i>
 						</button>
-						<form method="POST" action="{{ url_for('eliminar_ubicacion', id=ubi[0]) }}" class="d-inline">
+						<form method="POST" action="{{ url_for('eliminar_ubicacion', id=ubi[0]) }}" class="d-inline confirm-delete-ubicacion">
 							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i
 									class="bi bi-trash"></i></button>
 						</form>
@@ -335,6 +337,23 @@
 				inputFiltro.setAttribute('list', 'listaDescripciones');
 				inputFiltro.addEventListener('input', filtrarPorDescripcion);
 			}
+
+			// Confirmación antes de eliminar una ubicación
+			var deleteForms = document.querySelectorAll('form.confirm-delete-ubicacion');
+			deleteForms.forEach(function(form) {
+				form.addEventListener('submit', function(e) {
+					var tr = form.closest('tr');
+					var descripcion = '';
+					if (tr) {
+						var descCell = tr.querySelector('.ubicacion-descripcion');
+						descripcion = descCell ? descCell.textContent.trim() : '';
+					}
+					var mensaje = '¿Confirma que desea eliminar la ubicación "' + descripcion + '"? Esta acción no se puede deshacer.';
+					if (!confirm(mensaje)) {
+						e.preventDefault();
+					}
+				});
+			});
 		});
 	</script>
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">

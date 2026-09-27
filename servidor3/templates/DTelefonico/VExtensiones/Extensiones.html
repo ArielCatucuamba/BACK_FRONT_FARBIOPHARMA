@@ -11,7 +11,7 @@
         body {
             background: #f7faff;
         }
-
+        
         .sidebar {
             background: #fff;
             border-radius: 20px;
@@ -110,7 +110,7 @@
             <ul class="menu-list">
                 <li><button class="menu-btn active" onclick="location.href='/vextensiones'" type="button"><i class="bi bi-telephone"></i> Extensiones</button></li>
                 <li><button class="menu-btn" onclick="location.href='/vcelulares'" type="button"><i class="bi bi-phone"></i> Celulares</button></li>
-                <li><button class="menu-btn" onclick="location.href='/vcorreos'" type="button"><i class="bi bi-envelope"></i> Correos <span class="menu-badge">3</span></button></li>
+                <li><button class="menu-btn" onclick="location.href='/vcorreos'" type="button"><i class="bi bi-envelope"></i> Correos </button></li>
                 <li><button class="menu-btn" onclick="location.href='/login'" type="button"><i class="bi bi-person-circle"></i> Iniciar sesión</button></li>
             </ul>
         </nav>
@@ -119,15 +119,6 @@
             <div class="d-flex gap-3 mb-4" style="justify-content:left;">
                 <input type="text" id="filtroNombre" class="form-control shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" placeholder="Filtrar por Nombre" onkeyup="filtrarTabla()">
                 <input type="text" id="filtroExtension" class="form-control shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" placeholder="Filtrar por Extensión" onkeyup="filtrarTabla()">
-                <select id="filtroArea" class="form-select shadow-sm"
-                    style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;"
-                    onchange="filtrarTabla()">
-                        <option value="">Filtrar por Área</option>
-                        {% set areas_unicas = extensiones | map(attribute=3) | unique | list %}
-                        {% for area in areas_unicas %}
-                            {% if area %}<option value="{{ area }}">{{ area }}</option>{% endif %}
-                        {% endfor %}
-                </select>
                 <select id="filtroDepartamento" class="form-select shadow-sm"
                     style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;"
                     onchange="filtrarTabla()">
@@ -135,6 +126,15 @@
                         {% set deps_unicos = extensiones | map(attribute=4) | unique | list %}
                         {% for dep in deps_unicos %}
                             {% if dep %}<option value="{{ dep }}">{{ dep }}</option>{% endif %}
+                        {% endfor %}
+                </select>
+                <select id="filtroArea" class="form-select shadow-sm"
+                    style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;"
+                    onchange="filtrarTabla()">
+                        <option value="">Filtrar por Área</option>
+                        {% set areas_unicas = extensiones | map(attribute=3) | unique | list %}
+                        {% for area in areas_unicas %}
+                            {% if area %}<option value="{{ area }}">{{ area }}</option>{% endif %}
                         {% endfor %}
                 </select>
             </div>
@@ -172,17 +172,27 @@
             </div>
         </div>
         <script>
+            // Normaliza cadenas: quita tildes/diacríticos, trim y pasa a minúsculas.
+            function normalizeStr(s) {
+                if (!s && s !== '') return '';
+                try {
+                    return s.toString().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+                } catch (e) {
+                    return s.toString().trim().toLowerCase();
+                }
+            }
+
             function filtrarTabla() {
-                var nombre = document.getElementById('filtroNombre').value.toLowerCase();
-                var extension = document.getElementById('filtroExtension').value.toLowerCase();
-                var area = document.getElementById('filtroArea').value;
-                var departamento = document.getElementById('filtroDepartamento').value;
+                var nombre = normalizeStr(document.getElementById('filtroNombre').value);
+                var extension = normalizeStr(document.getElementById('filtroExtension').value);
+                var area = normalizeStr(document.getElementById('filtroArea').value);
+                var departamento = normalizeStr(document.getElementById('filtroDepartamento').value);
                 var filas = document.querySelectorAll('#tablaExtensiones tr');
                 filas.forEach(function (fila) {
-                    var nombreCelda = fila.querySelector('.ext-nombre').textContent.trim().toLowerCase();
-                    var extensionCelda = fila.querySelector('.ext-extension').textContent.trim().toLowerCase();
-                    var areaCelda = fila.querySelector('.ext-area').textContent.trim();
-                    var depCelda = fila.querySelector('.ext-departamento').textContent.trim();
+                    var nombreCelda = normalizeStr(fila.querySelector('.ext-nombre').textContent);
+                    var extensionCelda = normalizeStr(fila.querySelector('.ext-extension').textContent);
+                    var areaCelda = normalizeStr(fila.querySelector('.ext-area').textContent);
+                    var depCelda = normalizeStr(fila.querySelector('.ext-departamento').textContent);
                     var mostrar = true;
                     if (nombre && !nombreCelda.includes(nombre)) mostrar = false;
                     if (extension && !extensionCelda.includes(extension)) mostrar = false;
@@ -191,6 +201,94 @@
                     fila.style.display = mostrar ? '' : 'none';
                 });
             }
+            
+            // --- Dependent select: actualizar 'Área' según 'Departamento' ---
+            // Construye un mapa de departamento -> set de áreas disponibles en la tabla.
+            function buildDeptAreaMap() {
+                var map = {};
+                var filas = document.querySelectorAll('#tablaExtensiones tr');
+                filas.forEach(function (fila) {
+                    var area = fila.querySelector('.ext-area').textContent.trim();
+                    var dep = fila.querySelector('.ext-departamento').textContent.trim();
+                    if (!dep) return;
+                    if (!map[dep]) map[dep] = new Set();
+                    if (area) map[dep].add(area);
+                });
+                return map;
+            }
+
+            // Guarda el listado completo de áreas (para restaurar cuando no hay filtro de departamento)
+            var FULL_AREAS = [];
+            var DEPT_AREA_MAP = {};
+
+            function initDependentSelects() {
+                var areaSelect = document.getElementById('filtroArea');
+                // Guardar todas las áreas presentes inicialmente
+                FULL_AREAS = Array.from(areaSelect.querySelectorAll('option'))
+                    .map(function(opt){ return opt.value; })
+                    .filter(function(v){ return v !== ''; });
+
+                // Construir mapa dept->areas desde las filas y normalizar claves
+                var map = buildDeptAreaMap();
+                DEPT_AREA_MAP = {};
+                for (var k in map) {
+                    if (Object.prototype.hasOwnProperty.call(map, k)) {
+                        var nk = normalizeStr(k);
+                        DEPT_AREA_MAP[nk] = Array.from(map[k]);
+                    }
+                }
+
+                // Añadir listener: cuando cambie departamento, actualizar áreas
+                var depSelect = document.getElementById('filtroDepartamento');
+                depSelect.addEventListener('change', function(){
+                    updateAreaOptions(this.value);
+                    // Ejecutar el filtrado para reflejar selección
+                    filtrarTabla();
+                });
+
+                // Ajustar inicialmente según el departamento que esté seleccionado (si aplica)
+                updateAreaOptions(depSelect.value);
+            }
+
+            function updateAreaOptions(selectedDept) {
+                var areaSelect = document.getElementById('filtroArea');
+                // Guardar la selección actual (si coincide con nueva lista la conservamos)
+                var current = areaSelect.value;
+                // Eliminar todas las opciones
+                while (areaSelect.firstChild) areaSelect.removeChild(areaSelect.firstChild);
+                // Añadir opción por defecto
+                var opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = 'Filtrar por Área';
+                areaSelect.appendChild(opt);
+
+                var list = [];
+                if (!selectedDept) {
+                    list = FULL_AREAS.slice();
+                } else {
+                    var nk = normalizeStr(selectedDept);
+                    if (DEPT_AREA_MAP[nk]) list = DEPT_AREA_MAP[nk].slice();
+                }
+                // Ordenar alfabéticamente para mejor UX
+                list.sort();
+                list.forEach(function(a){
+                    var o = document.createElement('option');
+                    o.value = a; o.textContent = a;
+                    areaSelect.appendChild(o);
+                });
+
+                // Si la selección anterior sigue disponible, restaurarla
+                if (current && Array.from(areaSelect.options).some(function(o){ return o.value === current; })) {
+                    areaSelect.value = current;
+                } else {
+                    areaSelect.value = '';
+                }
+            }
+
+            // Inicializar después de que el DOM cargue
+            document.addEventListener('DOMContentLoaded', function(){
+                initDependentSelects();
+            });
         </script>
     </div>
     </div>

@@ -210,7 +210,7 @@
 							   onclick="llenarFormularioEditarDesdeBoton(this)">
 							   <i class="bi bi-pencil"></i>
 						   </button>
-						   <form method="POST" action="{{ url_for('eliminar_departamento', id=dep[0]) }}" class="d-inline">
+						   <form method="POST" action="{{ url_for('eliminar_departamento', id=dep[0]) }}" class="d-inline confirm-delete-departamento">
 							   <button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i
 									   class="bi bi-trash"></i></button>
 						   </form>
@@ -252,6 +252,24 @@
 				inputFiltro.setAttribute('list', 'listaDepartamentos');
 				inputFiltro.addEventListener('input', filtrarPorDepartamento);
 			}
+
+			// Confirmación antes de eliminar un departamento
+			var deleteForms = document.querySelectorAll('form.confirm-delete-departamento');
+			deleteForms.forEach(function(form) {
+				form.addEventListener('submit', function(e) {
+					try {
+						var row = form.closest('tr');
+						var depName = (row && row.querySelector('.departamento-nombre')) ? row.querySelector('.departamento-nombre').textContent.trim() : '';
+						var msg = depName ? `¿Eliminar el departamento "${depName}"? Esta acción no se puede deshacer.` : '¿Eliminar este departamento? Esta acción no se puede deshacer.';
+						if (!confirm(msg)) {
+							e.preventDefault();
+						}
+					} catch (err) {
+						e.preventDefault();
+						console.error('Error en confirmación de eliminación:', err);
+					}
+				});
+			});
 		});
 	</script>
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">

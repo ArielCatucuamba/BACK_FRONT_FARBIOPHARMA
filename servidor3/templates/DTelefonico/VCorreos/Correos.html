@@ -113,7 +113,7 @@
                 <li><button class="menu-btn" onclick="location.href='/vcelulares'" type="button"><i
                             class="bi bi-phone"></i> Celulares</button></li>
                 <li><button class="menu-btn active" onclick="location.href='/vcorreos'" type="button"><i
-                            class="bi bi-envelope"></i> Correos <span class="menu-badge">3</span></button></li>
+                            class="bi bi-envelope"></i> Correos </button></li>
                 <li><button class="menu-btn" onclick="location.href='/login'" type="button"><i
                             class="bi bi-person-circle"></i> Iniciar sesión</button></li>
             </ul>
@@ -123,18 +123,18 @@
             <div class="d-flex gap-3 mb-4" style="justify-content:left;">
                 <input type="text" id="filtroNombre" class="form-control shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" placeholder="Filtrar por Nombre" onkeyup="filtrarTabla()">
                 <input type="text" id="filtroCorreo" class="form-control shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" placeholder="Filtrar por Correo" onkeyup="filtrarTabla()">
+                <select id="filtroDepartamento" class="form-select shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" onchange="updateAreaOptionsCor(this.value); filtrarTabla();">
+                    <option value="">Filtrar por Departamento</option>
+                    {% set deps_unicos = correos | map(attribute=4) | unique | list %}
+                    {% for dep in deps_unicos %}
+                        {% if dep %}<option value="{{ dep }}">{{ dep }}</option>{% endif %}
+                    {% endfor %}
+                </select>
                 <select id="filtroArea" class="form-select shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" onchange="filtrarTabla()">
                     <option value="">Filtrar por Área</option>
                     {% set areas_unicas = correos | map(attribute=3) | unique | list %}
                     {% for area in areas_unicas %}
                         {% if area %}<option value="{{ area }}">{{ area }}</option>{% endif %}
-                    {% endfor %}
-                </select>
-                <select id="filtroDepartamento" class="form-select shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" onchange="filtrarTabla()">
-                    <option value="">Filtrar por Departamento</option>
-                    {% set deps_unicos = correos | map(attribute=4) | unique | list %}
-                    {% for dep in deps_unicos %}
-                        {% if dep %}<option value="{{ dep }}">{{ dep }}</option>{% endif %}
                     {% endfor %}
                 </select>
             </div>
@@ -164,17 +164,27 @@
             </div>
         </div>
         <script>
+            // Normaliza cadenas: quita tildes/diacríticos, trim y pasa a minúsculas.
+            function normalizeStr(s) {
+                if (!s && s !== '') return '';
+                try {
+                    return s.toString().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+                } catch (e) {
+                    return s.toString().trim().toLowerCase();
+                }
+            }
+
             function filtrarTabla() {
-                var nombre = document.getElementById('filtroNombre').value.toLowerCase();
-                var correo = document.getElementById('filtroCorreo').value.toLowerCase();
-                var area = document.getElementById('filtroArea').value;
-                var departamento = document.getElementById('filtroDepartamento').value;
+                var nombre = normalizeStr(document.getElementById('filtroNombre').value);
+                var correo = normalizeStr(document.getElementById('filtroCorreo').value);
+                var area = normalizeStr(document.getElementById('filtroArea').value);
+                var departamento = normalizeStr(document.getElementById('filtroDepartamento').value);
                 var filas = document.querySelectorAll('#tablaCorreos tr');
                 filas.forEach(function (fila) {
-                    var nombreCelda = fila.querySelector('.cor-nombre').textContent.trim().toLowerCase();
-                    var correoCelda = fila.querySelector('.cor-correo').textContent.trim().toLowerCase();
-                    var areaCelda = fila.querySelector('.cor-area').textContent.trim();
-                    var depCelda = fila.querySelector('.cor-departamento').textContent.trim();
+                    var nombreCelda = normalizeStr(fila.querySelector('.cor-nombre').textContent);
+                    var correoCelda = normalizeStr(fila.querySelector('.cor-correo').textContent);
+                    var areaCelda = normalizeStr(fila.querySelector('.cor-area').textContent);
+                    var depCelda = normalizeStr(fila.querySelector('.cor-departamento').textContent);
                     var mostrar = true;
                     if (nombre && !nombreCelda.includes(nombre)) mostrar = false;
                     if (correo && !correoCelda.includes(correo)) mostrar = false;
@@ -183,6 +193,82 @@
                     fila.style.display = mostrar ? '' : 'none';
                 });
             }
+        </script>
+        <script>
+            // --- Dependent select: actualizar 'Área' según 'Departamento' para Correos ---
+            function buildDeptAreaMapCor() {
+                var map = {};
+                var filas = document.querySelectorAll('#tablaCorreos tr');
+                filas.forEach(function (fila) {
+                    var area = fila.querySelector('.cor-area').textContent.trim();
+                    var dep = fila.querySelector('.cor-departamento').textContent.trim();
+                    if (!dep) return;
+                    if (!map[dep]) map[dep] = new Set();
+                    if (area) map[dep].add(area);
+                });
+                return map;
+            }
+
+            var FULL_AREAS_COR = [];
+            var DEPT_AREA_MAP_COR = {};
+
+            function initDependentSelectsCor() {
+                var areaSelect = document.getElementById('filtroArea');
+                // Guardar todas las áreas presentes inicialmente
+                FULL_AREAS_COR = Array.from(areaSelect.querySelectorAll('option'))
+                    .map(function(opt){ return opt.value; })
+                    .filter(function(v){ return v !== ''; });
+
+                var map = buildDeptAreaMapCor();
+                DEPT_AREA_MAP_COR = {};
+                for (var k in map) {
+                    if (Object.prototype.hasOwnProperty.call(map, k)) {
+                        var nk = normalizeStr(k);
+                        DEPT_AREA_MAP_COR[nk] = Array.from(map[k]);
+                    }
+                }
+
+                var depSelect = document.getElementById('filtroDepartamento');
+                depSelect.addEventListener('change', function(){
+                    updateAreaOptionsCor(this.value);
+                    filtrarTabla();
+                });
+                // inicializar áreas según el departamento que pueda venir preseleccionado
+                updateAreaOptionsCor(depSelect.value);
+            }
+
+            function updateAreaOptionsCor(selectedDept) {
+                var areaSelect = document.getElementById('filtroArea');
+                var current = areaSelect.value;
+                while (areaSelect.firstChild) areaSelect.removeChild(areaSelect.firstChild);
+                var opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = 'Filtrar por Área';
+                areaSelect.appendChild(opt);
+
+                var list = [];
+                if (!selectedDept) {
+                    list = FULL_AREAS_COR.slice();
+                } else {
+                    var nk = normalizeStr(selectedDept);
+                    if (DEPT_AREA_MAP_COR[nk]) list = DEPT_AREA_MAP_COR[nk].slice();
+                }
+                list.sort();
+                list.forEach(function(a){
+                    var o = document.createElement('option'); o.value = a; o.textContent = a;
+                    areaSelect.appendChild(o);
+                });
+
+                if (current && Array.from(areaSelect.options).some(function(o){ return o.value === current; })) {
+                    areaSelect.value = current;
+                } else {
+                    areaSelect.value = '';
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', function(){
+                initDependentSelectsCor();
+            });
         </script>
     </div>
     </div>
