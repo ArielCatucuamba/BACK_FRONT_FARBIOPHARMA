@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>CRUD Vehículos</title>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/crud-theme.css') }}">
+	<style>
+		.plate-badge { display: inline-block; min-width: 100px; padding: .45rem .75rem; border: 1px solid #cbd9e2; border-radius: 8px; background: #fff; color: #0d3b4e; font-weight: 750; letter-spacing: .055em; text-align: center; box-shadow: inset 0 0 0 2px #f5f8fa; }
+	</style>
+</head>
+
+<body>
+	<nav class="navbar navbar-expand-lg navbar-dark">
+		<div class="container">
+			<a class="navbar-brand" href="{{ url_for('crud_vehiculos') }}"><i class="bi bi-car-front-fill me-2"></i>Vehículos</a>
+			<div class="navbar-nav ms-auto align-items-center">
+				<span class="navbar-text me-3">Bienvenido, {{ session.username }}</span>
+				<a class="nav-link" href="{{ url_for('logout') }}">Cerrar sesión</a>
+			</div>
+		</div>
+	</nav>
+
+	<main class="page-shell">
+		{% with messages = get_flashed_messages(with_categories=true) %}
+			{% if messages %}
+				{% for category, message in messages %}
+					<div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+						{{ message }}
+						<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+					</div>
+				{% endfor %}
+			{% endif %}
+		{% endwith %}
+
+		<section class="page-card bg-white p-4 p-lg-5">
+			<div class="page-header mb-4">
+				<div>
+					<div class="text-uppercase small fw-semibold mb-2" style="color:#6b8796;letter-spacing:.12em;"><i class="bi bi-truck-front me-1"></i>Flota y transporte</div>
+					<h1 class="h2 page-title mb-2"><i class="bi bi-car-front-fill me-2" aria-hidden="true"></i>Gestión de vehículos</h1>
+					<p class="page-subtitle mb-0">Administra los vehículos de la compañía y sus conductores asignados.</p>
+				</div>
+			</div>
+
+			<div class="action-toolbar mb-3">
+				<div class="input-group search-control">
+					<span class="input-group-text"><i class="bi bi-search"></i></span>
+					<input type="search" id="filtroVehiculos" class="form-control" placeholder="Buscar por placa, marca, modelo o conductor…" aria-label="Buscar vehículos">
+				</div>
+				<button type="button" class="btn btn-add ms-auto" data-bs-toggle="modal" data-bs-target="#modalAgregar"><i class="bi bi-plus-lg me-2"></i>Nuevo vehículo</button>
+			</div>
+
+			<div class="table-responsive table-wrap">
+				<table class="table vehicle-table align-middle" id="tablaVehiculos">
+					<thead>
+						<tr class="fila-vehiculo">
+							<th>ID</th>
+							<th>Placa</th>
+							<th>Marca</th>
+							<th>Modelo</th>
+							<th>Color</th>
+							<th>Conductor asignado</th>
+							<th class="text-center">Acciones</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for vehiculo in vehiculos %}
+						<tr class="fila-vehiculo">
+							<td>{{ vehiculo[0] }}</td>
+							<td><span class="plate-badge">{{ vehiculo[1] }}</span></td>
+							<td class="vehiculo-busqueda">{{ vehiculo[2] }}</td>
+							<td class="vehiculo-busqueda">{{ vehiculo[3] }}</td>
+							<td class="vehiculo-busqueda">{{ vehiculo[4] }}</td>
+							<td class="vehiculo-busqueda">{{ vehiculo[5] or 'Sin asignar' }}</td>
+							<td class="text-center text-nowrap">
+								<div class="action-buttons">
+								<button type="button" class="btn btn-sm btn-primary btn-icon" title="Editar" aria-label="Editar vehículo"
+									data-bs-toggle="modal" data-bs-target="#modalEditar"
+									data-id="{{ vehiculo[0] }}" data-placa="{{ vehiculo[1]|e }}"
+									data-marca="{{ vehiculo[2]|e }}" data-modelo="{{ vehiculo[3]|e }}"
+									data-color="{{ vehiculo[4]|e }}" data-conductor="{{ (vehiculo[5] or '')|e }}"
+									onclick="prepararEdicion(this)"><i class="bi bi-pencil"></i></button>
+								<form method="POST" action="{{ url_for('eliminar_vehiculo', id=vehiculo[0]) }}" class="d-inline formulario-eliminar">
+									<button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="Eliminar" aria-label="Eliminar vehículo"><i class="bi bi-trash"></i></button>
+								</form>
+								</div>
+							</td>
+						</tr>
+						{% else %}
+						<tr><td colspan="7" class="text-center empty-state"><i class="bi bi-car-front d-block fs-2 mb-2"></i>Todavía no hay vehículos registrados.</td></tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+			<div id="sinResultados" class="text-center text-muted py-4 d-none">No se encontraron vehículos con ese criterio.</div>
+		</section>
+	</main>
+
+	<div class="modal fade" id="modalAgregar" tabindex="-1" aria-labelledby="modalAgregarLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<form method="POST" action="{{ url_for('crud_vehiculos') }}">
+					<div class="modal-header">
+						<h2 class="modal-title fs-5" id="modalAgregarLabel">Agregar vehículo</h2>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+					</div>
+					<div class="modal-body">
+						<div class="mb-3"><label for="nuevaPlaca" class="form-label">Placa</label><input type="text" class="form-control text-uppercase" id="nuevaPlaca" name="placa" maxlength="20" required></div>
+						<div class="row">
+							<div class="col-sm-6 mb-3"><label for="nuevaMarca" class="form-label">Marca</label><input type="text" class="form-control" id="nuevaMarca" name="marca" maxlength="80" required></div>
+							<div class="col-sm-6 mb-3"><label for="nuevoModelo" class="form-label">Modelo</label><input type="text" class="form-control" id="nuevoModelo" name="modelo" maxlength="80" required></div>
+						</div>
+						<div class="row">
+							<div class="col-sm-6 mb-3"><label for="nuevoColor" class="form-label">Color</label><input type="text" class="form-control" id="nuevoColor" name="color" maxlength="50" required></div>
+							<div class="col-sm-6 mb-3"><label for="nuevoConductor" class="form-label">Conductor asignado <span class="text-muted">(opcional)</span></label><input type="text" class="form-control" id="nuevoConductor" name="conductor_asignado" maxlength="100"></div>
+						</div>
+					</div>
+					<div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Guardar vehículo</button></div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="modalEditar" tabindex="-1" aria-labelledby="modalEditarLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<form id="formEditar" method="POST">
+					<div class="modal-header">
+						<h2 class="modal-title fs-5" id="modalEditarLabel">Editar vehículo</h2>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+					</div>
+					<div class="modal-body">
+						<div class="mb-3"><label for="editarPlaca" class="form-label">Placa</label><input type="text" class="form-control text-uppercase" id="editarPlaca" name="placa" maxlength="20" required></div>
+						<div class="row">
+							<div class="col-sm-6 mb-3"><label for="editarMarca" class="form-label">Marca</label><input type="text" class="form-control" id="editarMarca" name="marca" maxlength="80" required></div>
+							<div class="col-sm-6 mb-3"><label for="editarModelo" class="form-label">Modelo</label><input type="text" class="form-control" id="editarModelo" name="modelo" maxlength="80" required></div>
+						</div>
+						<div class="row">
+							<div class="col-sm-6 mb-3"><label for="editarColor" class="form-label">Color</label><input type="text" class="form-control" id="editarColor" name="color" maxlength="50" required></div>
+							<div class="col-sm-6 mb-3"><label for="editarConductor" class="form-label">Conductor asignado <span class="text-muted">(opcional)</span></label><input type="text" class="form-control" id="editarConductor" name="conductor_asignado" maxlength="100"></div>
+						</div>
+					</div>
+					<div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Guardar cambios</button></div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+	<script>
+		function prepararEdicion(boton) {
+			const id = boton.dataset.id;
+			document.getElementById('formEditar').action = '/vehiculos/editar/' + id;
+			document.getElementById('editarPlaca').value = boton.dataset.placa;
+			document.getElementById('editarMarca').value = boton.dataset.marca;
+			document.getElementById('editarModelo').value = boton.dataset.modelo;
+			document.getElementById('editarColor').value = boton.dataset.color;
+			document.getElementById('editarConductor').value = boton.dataset.conductor;
+		}
+
+		const filtro = document.getElementById('filtroVehiculos');
+		filtro.addEventListener('input', function () {
+			const consulta = this.value.trim().toLocaleLowerCase();
+			const filas = Array.from(document.querySelectorAll('#tablaVehiculos tbody .fila-vehiculo'));
+			let visibles = 0;
+			filas.forEach(function (fila) {
+				const coincide = fila.textContent.toLocaleLowerCase().includes(consulta);
+				fila.classList.toggle('d-none', !coincide);
+				if (coincide) visibles++;
+			});
+			document.getElementById('sinResultados').classList.toggle('d-none', visibles !== 0 || filas.length === 0);
+		});
+		filtro.dispatchEvent(new Event('input'));
+
+		document.querySelectorAll('.formulario-eliminar').forEach(function (formulario) {
+			formulario.addEventListener('submit', function (evento) {
+				if (!confirm('¿Eliminar este vehículo? Esta acción no se puede deshacer.')) evento.preventDefault();
+			});
+		});
+	</script>
+	<script src="{{ url_for('static', filename='js/crud-search.js') }}"></script>
+</body>
+
+</html>

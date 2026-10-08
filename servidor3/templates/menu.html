@@ -9,38 +9,50 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
         body {
-    
-            background: #e9ebef;
+            background: #f3f6fa;
             min-height: 100vh;
+            margin: 0;
         }
         .main-container {
             display: flex;
-            height: 100vh;
+            min-height: 100vh;
             align-items: stretch;
+            gap: 18px;
+            padding: 18px;
         }
         .sidebar {
-            background: #e9ebef;
-            border-radius: 16px;
-            width: 340px;
-            min-width: 340px;
-            padding: 2rem 1.5rem;
-            margin: 32px 0 32px 32px;
+            background: #fff;
+            border-radius: 18px;
+            width: 250px;
+            min-width: 250px;
+            padding: 1.25rem 1rem;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            box-shadow: 0 4px 24px rgba(13, 59, 78, 0.08);
-            height: calc(100vh - 64px);
-            border: 4px solid #000000;
+            align-items: stretch;
+            box-shadow: 0 8px 28px rgba(13, 59, 78, 0.10);
+            border: 1px solid #e3eaf2;
+            height: calc(100vh - 36px);
+            position: sticky;
+            top: 18px;
+        }
+        .brand {
+            color: #0d3b4e;
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: .02em;
+            padding: .4rem .6rem 1.1rem;
         }
         .sidebar .logout-btn {
             background: #0d3b4e;
             color: #fff;
             border: none;
             border-radius: 8px;
-            padding: 0.8rem 2rem;
+            padding: 0.65rem 1rem;
             font-weight: 600;
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
+            font-size: .95rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            text-decoration: none;
             box-shadow: 0 2px 8px rgba(13, 59, 78, 0.08);
             transition: background 0.2s;
         }
@@ -52,17 +64,18 @@
             padding: 0;
             margin: 0;
             width: 100%;
+            overflow-y: auto;
         }
         .menu-list li {
-            margin-bottom: 18px;
+            margin-bottom: 5px;
         }
         .menu-btn {
             width: 100%;
             background: none;
             border: none;
             text-align: left;
-            padding: 12px 16px;
-            font-size: 1.15rem;
+            padding: 10px 12px;
+            font-size: .95rem;
             color: #14506b;
             border-radius: 8px;
             font-weight: 500;
@@ -76,22 +89,36 @@
             background: #eafaf1;
             color: #0d3b4e;
         }
-        .image-container {
+        .workspace {
             flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 32px;
-            height: calc(100vh - 64px);
-        }
-        .main-image {
-            max-width: 100%;
-            max-height: 100%;
-            height: 100%;
-            border-radius: 16px;
-            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.10);
+            min-width: 0;
+            height: calc(100vh - 36px);
+            overflow: hidden;
             background: #fff;
-            object-fit: cover;
+            border: 1px solid #e3eaf2;
+            border-radius: 18px;
+            box-shadow: 0 8px 28px rgba(13, 59, 78, 0.08);
+        }
+        .module-frame {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-height: 600px;
+            border: 0;
+            background: #fff;
+        }
+        @media (max-width: 800px) {
+            .main-container { gap: 10px; padding: 10px; }
+            .sidebar { width: 190px; min-width: 190px; padding: .85rem .65rem; height: calc(100vh - 20px); top: 10px; }
+            .workspace { height: calc(100vh - 20px); }
+            .menu-btn { padding: 9px 8px; font-size: .85rem; }
+        }
+        @media (max-width: 560px) {
+            .main-container { flex-direction: column; }
+            .sidebar { position: static; width: 100%; min-width: 0; height: auto; }
+            .menu-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 6px; }
+            .workspace { height: 75vh; }
+            .module-frame { min-height: 75vh; }
         }
     </style>
 </head>
@@ -99,52 +126,48 @@
 <body>
     <div class="main-container">
         <div class="sidebar">
-            <a href="{{ url_for('login') }}" class="logout-btn">Cerrar Sesión</a>
+            <div class="brand"><i class="bi bi-grid-1x2-fill me-2"></i>Directorio Farbio</div>
             <ul class="menu-list">
-                <li><button class="menu-btn" id="btnAreas"><i class="bi bi-diagram-3"></i> Areas</button></li>
-                <li><button class="menu-btn" id="btnDepartamentos"><i class="bi bi-building"></i> Departamentos</button></li>
-                <li><button class="menu-btn" id="btnCargos"><i class="bi bi-person-badge"></i> Cargos</button></li>
-                <li><button class="menu-btn" id="btnUbicaciones"><i class="bi bi-geo-alt"></i> Ubicaciones</button></li>
-                <li><button class="menu-btn" id="btnColaboradores"><i class="bi bi-people"></i> Colaboradores</button></li>
-                <li><button class="menu-btn" id="btnExtensiones"><i class="bi bi-telephone"></i> Extensiones</button></li>
-                <li><button class="menu-btn" id="btnCelulares"><i class="bi bi-phone"></i> Celulares</button></li>
-                <li><button class="menu-btn" id="btnCorreos"><i class="bi bi-envelope"></i> Correos</button></li>
-                <li><button class="menu-btn" id="btnRegistrar"><i class="bi bi-person-plus"></i> Registrar</button></li>
+                <li><button class="menu-btn active" data-url="/crud_areas" type="button"><i class="bi bi-diagram-3"></i> Áreas</button></li>
+                <li><button class="menu-btn" data-url="/departamentos" type="button"><i class="bi bi-building"></i> Departamentos</button></li>
+                <li><button class="menu-btn" data-url="/crud_cargos" type="button"><i class="bi bi-person-badge"></i> Cargos</button></li>
+                <li><button class="menu-btn" data-url="/ubicaciones" type="button"><i class="bi bi-geo-alt"></i> Ubicaciones</button></li>
+                <li><button class="menu-btn" data-url="/crud_colaboradores" type="button"><i class="bi bi-people"></i> Colaboradores</button></li>
+                <li><button class="menu-btn" data-url="/extensiones" type="button"><i class="bi bi-telephone"></i> Extensiones</button></li>
+                <li><button class="menu-btn" data-url="/celulares" type="button"><i class="bi bi-phone"></i> Celulares</button></li>
+                <li><button class="menu-btn" data-url="/correos" type="button"><i class="bi bi-envelope"></i> Correos</button></li>
+                <li><button class="menu-btn" data-url="/vehiculos" type="button"><i class="bi bi-car-front"></i> Vehículos</button></li>
+                <li><button class="menu-btn" data-url="/jerarquia" type="button"><i class="bi bi-diagram-3"></i> Jerarquía</button></li>
+                <li><button class="menu-btn" data-url="/register" type="button"><i class="bi bi-person-plus"></i> Registrar</button></li>
             </ul>
         </div>
-        <div class="image-container">
-            <img src="/static/images/menu.png"
-                alt="Imagen" class="main-image">
+        <div class="workspace">
+            <iframe class="module-frame" id="moduleFrame" src="/crud_areas" title="Contenido del módulo seleccionado"></iframe>
         </div>
     </div>
     <script>
-        document.getElementById('btnAreas').onclick = function () {
-            window.location.href = '/crud_areas';
-        };
-        document.getElementById('btnCargos').onclick = function () {
-            window.location.href = '/crud_cargos';
-        };
-        document.getElementById('btnColaboradores').onclick = function () {
-            window.location.href = '/crud_colaboradores';
-        };
-        document.getElementById('btnDepartamentos').onclick = function () {
-            window.location.href = '/departamentos';
-        };
-        document.getElementById('btnUbicaciones').onclick = function () {
-            window.location.href = '/ubicaciones';
-        };
-        document.getElementById('btnExtensiones').onclick = function () {
-            window.location.href = '/extensiones';
-        };
-        document.getElementById('btnCelulares').onclick = function () {
-            window.location.href = '/celulares';
-        };
-        document.getElementById('btnCorreos').onclick = function () {
-            window.location.href = '/correos';
-        };
-        document.getElementById('btnRegistrar').onclick = function () {
-            window.location.href = '/register';
-        };
+        const moduleFrame = document.getElementById('moduleFrame');
+        const moduleButtons = Array.from(document.querySelectorAll('.menu-btn[data-url]'));
+
+        moduleButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                moduleButtons.forEach(item => item.classList.remove('active'));
+                button.classList.add('active');
+                moduleFrame.src = button.dataset.url;
+            });
+        });
+
+        // Mantener en el panel los CRUD al regresar al menú o cerrar sesión.
+        moduleFrame.addEventListener('load', function () {
+            try {
+                const frameDocument = moduleFrame.contentDocument;
+                frameDocument.querySelectorAll('a[href="/menu"], a[href="/logout"], a[href="/login"]').forEach(function (link) {
+                    link.target = '_top';
+                });
+            } catch (error) {
+                // Ignorar documentos externos o navegación temporal del iframe.
+            }
+        });
     </script>
 </body>
 

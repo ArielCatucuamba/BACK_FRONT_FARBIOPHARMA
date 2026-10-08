@@ -8,16 +8,17 @@ services:
     ports:
       - 5000:5000
     environment:
-      - MYSQL_HOST=maestro1
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=F4rb10PH4rm4
-      - MYSQL_DB=db_informacion
-      - MYSQL_PORT=3306
+      DB_HOST: ${DB_HOST:?Define DB_HOST en el archivo .env}
+      DB_PORT: ${DB_PORT:?Define DB_PORT en el archivo .env}
+      DB_USER: ${DB_USER:?Define DB_USER en el archivo .env}
+      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en el archivo .env}
+      DB_NAME: ${DB_NAME:?Define DB_NAME en el archivo .env}
 
   phpmyadmin:
     image: phpmyadmin:latest
     environment:
-      PMA_HOSTS: "maestro1,esclavo"
+      PMA_HOST: ${DB_HOST:?Define DB_HOST en el archivo .env}
+      PMA_PORT: ${DB_PORT:?Define DB_PORT en el archivo .env}
       PMA_ARBITRARY: 1
     ports:
       - 8081:80
