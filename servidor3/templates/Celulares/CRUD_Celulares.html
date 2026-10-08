@@ -91,7 +91,7 @@
         </div>
     </nav>
 
-	<div class="container mt-5">
+	<main class="page-shell">
 		{% with messages = get_flashed_messages(with_categories=true) %}
 			{% if messages %}
 				<div class="container mt-3">
@@ -106,9 +106,15 @@
 		{% endwith %}
 		
 
-		<!-- Encabezado mejorado: título y debajo una fila con Regresar, filtro y Agregar -->
+		<div class="page-header mb-4">
+			<div>
+				<h1 class="h2 page-title mb-2"><i class="bi bi-phone me-2" aria-hidden="true"></i>Gestión de Celulares</h1>
+				<p class="page-subtitle mb-0">Administra los números móviles vinculados a los colaboradores.</p>
+			</div>
+		</div>
+		<section class="page-card bg-white p-4 p-lg-5">
+		<!-- Barra de búsqueda y acciones -->
 		<div class="mb-2">
-			<h2 class="mb-3"><i class="bi bi-phone me-2" aria-hidden="true"></i>Gestión de Celulares</h2>
 			<div class="row g-2 align-items-center">
 				<div class="col">
 					<input type="text" id="filtroArea" class="form-control" placeholder="Filtrar por Área" autocomplete="off">
@@ -305,6 +311,7 @@
 			</div>
 		</div>
 		<!-- Header consolidated above: título + fila con Regresar, filtro y Agregar -->
+		<div class="table-responsive table-wrap">
 		<table class="table table-bordered table-fixed" id="tablaCelulares">
 			<thead>
 				<tr>
@@ -346,7 +353,9 @@
 				{% endif %}
 			</tbody>
 		</table>
-	</div>
+		</div>
+		</section>
+		</main>
 	<script>
 		// Mapeo de colaboradores a área y departamento (relleno desde backend) — usar JSON seguro para evitar errores de parsing
 		const colaboradoresInfo = {{ colaboradores_info | tojson | safe }};

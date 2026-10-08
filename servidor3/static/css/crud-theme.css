@@ -22,8 +22,7 @@ body {
 }
 
 .navbar .navbar-brand {
-    font-weight: 650;
-    letter-spacing: .01em;
+    display: none;
 }
 
 /* Shared content card and generous desktop width, matching Jerarquía/Vehículos. */
@@ -32,10 +31,10 @@ body > .container.mt-5 {
     max-width: none;
     margin: 28px auto 48px !important;
     padding: 32px 38px;
-    border: 1px solid var(--crud-line);
-    border-radius: 20px;
+    border: 0;
+    border-radius: 0;
     background: #fff;
-    box-shadow: 0 12px 36px rgba(22, 51, 72, .08);
+    box-shadow: none;
     overflow-x: auto;
 }
 
@@ -350,6 +349,30 @@ body > .container.mt-5 .alert {
     margin-bottom: 14px !important;
 }
 
+.page-shell .crud-search-toolbar {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 14px;
+}
+
+.page-shell .crud-search-toolbar > .crud-search-field {
+    flex: 1 1 360px;
+    min-width: 0;
+    padding: 0;
+}
+
+.page-shell .crud-search-toolbar .input-group {
+    width: 100%;
+}
+
+.page-shell .crud-search-add-wrapper {
+    margin-left: auto;
+    padding: 0;
+}
+
 .page-shell .search-control {
     flex: 1 1 360px;
     width: min(440px, 100%);
@@ -416,6 +439,7 @@ body > .container.mt-5 .alert {
 }
 
 .page-shell .table-wrap {
+    border: 1px solid var(--crud-line);
     border-color: var(--crud-line);
     border-radius: 14px;
 }
@@ -424,6 +448,7 @@ body > .container.mt-5 .alert {
     width: 100%;
     min-width: 820px;
     margin: 0;
+    border: 0;
     border-collapse: separate;
     border-spacing: 0;
 }
@@ -515,6 +540,10 @@ body > .container.mt-5 .alert {
     .page-shell .page-card { padding: 18px !important; border-radius: 15px; }
     .page-shell .page-header { align-items: stretch; flex-direction: column; gap: 16px; }
     .page-shell .action-toolbar { align-items: stretch; }
+    .page-shell .crud-search-toolbar { align-items: stretch; }
+    .page-shell .crud-search-toolbar > .crud-search-field,
+    .page-shell .crud-search-add-wrapper { flex: 1 1 100%; }
+    .page-shell .crud-search-add { width: 100%; }
     .page-shell .search-control { flex-basis: 100%; width: 100%; }
     .page-shell .btn-add { flex: 1 1 auto; }
     .page-shell .table-wrap > table thead th,

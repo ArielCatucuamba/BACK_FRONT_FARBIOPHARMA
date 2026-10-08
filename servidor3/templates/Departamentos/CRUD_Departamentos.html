@@ -75,7 +75,7 @@
         </div>
     </nav>
 
-		<div class="container mt-5">
+		<main class="page-shell">
 				   {% with messages = get_flashed_messages(with_categories=true) %}
 					   {% if messages %}
 						   {% for category, message in messages %}
@@ -171,9 +171,15 @@
 				</div>
 			</div>
 		</div>
-		<!-- Encabezado mejorado: título y debajo una fila con Regresar, filtro y Agregar -->
+		<div class="page-header mb-4">
+			<div>
+				<h1 class="h2 page-title mb-2"><i class="bi bi-building me-2" aria-hidden="true"></i>Gestión de Departamentos</h1>
+				<p class="page-subtitle mb-0">Gestiona los departamentos vinculados a las áreas de la compañía.</p>
+			</div>
+		</div>
+		<section class="page-card bg-white p-4 p-lg-5">
+		<!-- Barra de búsqueda y acciones -->
 		<div class="mb-2">
-			<h2 class="mb-3"><i class="bi bi-building me-2" aria-hidden="true"></i>Gestión de Departamentos</h2>
 			<div class="row g-2 align-items-center">
 				<div class="col">
 					<input type="text" id="filtroDepartamento" class="form-control" placeholder="Filtrar por Departamento" autocomplete="off">
@@ -189,6 +195,7 @@
 				</div>
 			</div>
 		</div>
+		<div class="table-responsive table-wrap">
 		<table class="table table-bordered table-fixed" id="tablaDepartamentos">
 			<thead>
 				<tr>
@@ -221,7 +228,9 @@
 				{% endif %}
 			</tbody>
 		</table>
-	</div>
+		</div>
+		</section>
+		</main>
 	<script>
 		   function llenarFormularioEditarDesdeBoton(btn) {
 			   var id = btn.getAttribute('data-id');
