@@ -181,16 +181,81 @@ def init_db():
             """)
 
 
-        # Crear tabla de extensiones relacionada con áreas, departamentos y colaboradores (por ID)
+        # Crear tabla de extensiones con relaciones directas a colaborador, área y departamento.
         cur.execute("""
             CREATE TABLE IF NOT EXISTS Extensiones (
                 ID_EXTENSIONES INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
                 ID_COLABORADOR INT NOT NULL,
                 EXTENSION INT NOT NULL,
+                AREA INT NULL,
+                DEPARTAMENTO INT NULL,
                 KEY ID_COLABORADOR (ID_COLABORADOR),
-                CONSTRAINT fk_app_Extensiones_Colaborador FOREIGN KEY (ID_COLABORADOR) REFERENCES Colaboradores (ID_COLABORADOR)
+                KEY idx_app_Extensiones_Area (AREA),
+                KEY idx_app_Extensiones_Departamento (DEPARTAMENTO),
+                CONSTRAINT fk_app_Extensiones_Colaborador FOREIGN KEY (ID_COLABORADOR) REFERENCES Colaboradores (ID_COLABORADOR),
+                CONSTRAINT fk_app_Extensiones_Area FOREIGN KEY (AREA) REFERENCES Areas (ID_AREAS),
+                CONSTRAINT fk_app_Extensiones_Departamento FOREIGN KEY (DEPARTAMENTO) REFERENCES Departamentos (ID_DEPARTAMENTOS)
             )
         """)
+
+        # Migrar tablas existentes que todavía no almacenan el área y departamento.
+        for column_name in ('AREA', 'DEPARTAMENTO'):
+            cur.execute("""
+                SELECT COUNT(*)
+                FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'Extensiones'
+                  AND COLUMN_NAME = %s
+            """, (column_name,))
+            if cur.fetchone()[0] == 0:
+                cur.execute(f"ALTER TABLE Extensiones ADD COLUMN {column_name} INT NULL")
+
+        # Para datos históricos, conservar el contexto actual del cargo del colaborador.
+        cur.execute("""
+            UPDATE Extensiones e
+            LEFT JOIN Colaboradores c ON e.ID_COLABORADOR = c.ID_COLABORADOR
+            LEFT JOIN Cargos cg ON c.CARGO = cg.ID_CARGOS
+            SET e.AREA = COALESCE(e.AREA, cg.AREA),
+                e.DEPARTAMENTO = COALESCE(e.DEPARTAMENTO, cg.DEPARTAMENTO)
+            WHERE e.AREA IS NULL OR e.DEPARTAMENTO IS NULL
+        """)
+
+        # Exigir las relaciones para todas las filas cuando los datos previos lo permiten.
+        cur.execute("SELECT COUNT(*) FROM Extensiones WHERE AREA IS NULL OR DEPARTAMENTO IS NULL")
+        if cur.fetchone()[0] == 0:
+            cur.execute("ALTER TABLE Extensiones MODIFY AREA INT NOT NULL, MODIFY DEPARTAMENTO INT NOT NULL")
+
+        for index_name, column_name in (
+            ('idx_app_Extensiones_Area', 'AREA'),
+            ('idx_app_Extensiones_Departamento', 'DEPARTAMENTO')
+        ):
+            cur.execute("""
+                SELECT COUNT(*)
+                FROM information_schema.STATISTICS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'Extensiones'
+                  AND INDEX_NAME = %s
+            """, (index_name,))
+            if cur.fetchone()[0] == 0:
+                cur.execute(f"CREATE INDEX {index_name} ON Extensiones ({column_name})")
+
+        for constraint_name, column_name, referenced_table, referenced_column in (
+            ('fk_app_Extensiones_Area', 'AREA', 'Areas', 'ID_AREAS'),
+            ('fk_app_Extensiones_Departamento', 'DEPARTAMENTO', 'Departamentos', 'ID_DEPARTAMENTOS')
+        ):
+            cur.execute("""
+                SELECT COUNT(*)
+                FROM information_schema.TABLE_CONSTRAINTS
+                WHERE CONSTRAINT_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'Extensiones'
+                  AND CONSTRAINT_NAME = %s
+                  AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+            """, (constraint_name,))
+            if cur.fetchone()[0] == 0:
+                cur.execute(
+                    f"ALTER TABLE Extensiones ADD CONSTRAINT {constraint_name} "
+                    f"FOREIGN KEY ({column_name}) REFERENCES {referenced_table} ({referenced_column})"
+                )
 
         # Crear tabla de celulares relacionada con áreas, departamentos y colaboradores (por ID)
         cur.execute("""
@@ -264,12 +329,11 @@ def verificar_password(password, password_guardado):
 def index():
     cur = mysql.connection.cursor()
     cur.execute("""
-        SELECT e.ID_EXTENSIONES, c.NOMBRE, e.EXTENSION, a.AREA, d.DEPARTAMENTO, cg.AREA, cg.DEPARTAMENTO, e.ID_COLABORADOR
+        SELECT e.ID_EXTENSIONES, c.NOMBRE, e.EXTENSION, a.AREA, d.DEPARTAMENTO, e.AREA, e.DEPARTAMENTO, e.ID_COLABORADOR
         FROM Extensiones e
         LEFT JOIN Colaboradores c ON e.ID_COLABORADOR = c.ID_COLABORADOR
-        LEFT JOIN Cargos cg ON c.CARGO = cg.ID_CARGOS
-        LEFT JOIN Areas a ON cg.AREA = a.ID_AREAS
-        LEFT JOIN Departamentos d ON cg.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        LEFT JOIN Areas a ON e.AREA = a.ID_AREAS
+        LEFT JOIN Departamentos d ON e.DEPARTAMENTO = d.ID_DEPARTAMENTOS
         ORDER BY c.NOMBRE
     """)
     extensiones = cur.fetchall()
@@ -422,8 +486,8 @@ def vextensiones():
         SELECT e.ID_EXTENSIONES, col.NOMBRE, e.EXTENSION, a.AREA, d.DEPARTAMENTO, e.ID_COLABORADOR
         FROM Extensiones e
         LEFT JOIN Colaboradores col ON e.ID_COLABORADOR = col.ID_COLABORADOR
-        LEFT JOIN Areas a ON col.AREA = a.ID_AREAS
-        LEFT JOIN Departamentos d ON col.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        LEFT JOIN Areas a ON e.AREA = a.ID_AREAS
+        LEFT JOIN Departamentos d ON e.DEPARTAMENTO = d.ID_DEPARTAMENTOS
         ORDER BY col.NOMBRE
     """)
     extensiones = cur.fetchall()
@@ -1158,31 +1222,41 @@ def crud_extensiones():
     if request.method == 'POST':
         id_colaborador = (request.form.get('id_colaborador') or '').strip()
         extension = (request.form.get('extension') or '').strip()
+        area = (request.form.get('area') or '').strip()
+        departamento = (request.form.get('departamento') or '').strip()
 
-        # Validaciones y normalizaciones: convertir cadenas vacías a None para insert NULL
-        if not id_colaborador:
-            flash('Debes seleccionar un colaborador válido antes de agregar la extensión.', 'danger')
+        if not all((id_colaborador, extension, area, departamento)):
+            flash('Selecciona un colaborador con área y departamento, e ingresa su extensión.', 'danger')
             cur.close()
             return redirect(url_for('crud_extensiones'))
 
-        try:
-            id_col = int(id_colaborador)
-        except Exception:
-            flash('ID de colaborador inválido.', 'danger')
+        if not all(value.isdigit() for value in (id_colaborador, extension, area, departamento)):
+            flash('Colaborador, área, departamento y extensión deben contener valores válidos.', 'danger')
             cur.close()
             return redirect(url_for('crud_extensiones'))
 
-        try:
-            ext_val = int(extension)
-        except Exception:
-            flash('La extensión debe ser un número válido.', 'danger')
+        id_col, ext_val, area_id, departamento_id = map(int, (id_colaborador, extension, area, departamento))
+        cur.execute("""
+            SELECT cg.AREA, cg.DEPARTAMENTO
+            FROM Colaboradores c
+            LEFT JOIN Cargos cg ON c.CARGO = cg.ID_CARGOS
+            WHERE c.ID_COLABORADOR = %s
+        """, (id_col,))
+        asignacion = cur.fetchone()
+        if not asignacion or asignacion[0] is None or asignacion[1] is None:
+            flash('El colaborador debe tener un cargo con área y departamento asignados.', 'danger')
+            cur.close()
+            return redirect(url_for('crud_extensiones'))
+
+        if area_id != asignacion[0] or departamento_id != asignacion[1]:
+            flash('El área y el departamento deben coincidir con el cargo del colaborador seleccionado.', 'danger')
             cur.close()
             return redirect(url_for('crud_extensiones'))
 
         try:
             cur.execute(
-                "INSERT INTO Extensiones (ID_COLABORADOR, EXTENSION) VALUES (%s, %s)",
-                (id_col, ext_val)
+                "INSERT INTO Extensiones (ID_COLABORADOR, EXTENSION, AREA, DEPARTAMENTO) VALUES (%s, %s, %s, %s)",
+                (id_col, ext_val, area_id, departamento_id)
             )
             mysql.connection.commit()
             flash('Extensión agregada correctamente.', 'success')
@@ -1191,12 +1265,11 @@ def crud_extensiones():
             flash('Error al agregar la extensión: ' + str(e), 'danger')
     # Leer: mostrar área y departamento actual del colaborador relacionado
     cur.execute("""
-        SELECT e.ID_EXTENSIONES, c.NOMBRE, e.EXTENSION, a.AREA, d.DEPARTAMENTO, cg.AREA, cg.DEPARTAMENTO, e.ID_COLABORADOR
+        SELECT e.ID_EXTENSIONES, c.NOMBRE, e.EXTENSION, a.AREA, d.DEPARTAMENTO, e.AREA, e.DEPARTAMENTO, e.ID_COLABORADOR
         FROM Extensiones e
         LEFT JOIN Colaboradores c ON e.ID_COLABORADOR = c.ID_COLABORADOR
-        LEFT JOIN Cargos cg ON c.CARGO = cg.ID_CARGOS
-        LEFT JOIN Areas a ON cg.AREA = a.ID_AREAS
-        LEFT JOIN Departamentos d ON cg.DEPARTAMENTO = d.ID_DEPARTAMENTOS
+        LEFT JOIN Areas a ON e.AREA = a.ID_AREAS
+        LEFT JOIN Departamentos d ON e.DEPARTAMENTO = d.ID_DEPARTAMENTOS
         ORDER BY c.NOMBRE
     """)
     extensiones = cur.fetchall()
@@ -1212,35 +1285,43 @@ def editar_extension(id):
         return redirect(url_for('login'))
 
     # Obtener valores del formulario
-    id_colaborador = request.form.get('id_colaborador', '').strip()
-    extension = request.form.get('extension', '').strip()
+    id_colaborador = (request.form.get('id_colaborador') or '').strip()
+    extension = (request.form.get('extension') or '').strip()
+    area = (request.form.get('area') or '').strip()
+    departamento = (request.form.get('departamento') or '').strip()
 
     # Validaciones básicas
-    if not extension:
-        flash('La extensión no puede estar vacía.', 'danger')
+    if not all((id_colaborador, extension, area, departamento)):
+        flash('Selecciona un colaborador con área y departamento, e ingresa su extensión.', 'danger')
         return redirect(url_for('crud_extensiones'))
-    if not extension.isdigit():
-        flash('La extensión debe ser un número válido.', 'danger')
+    if not all(value.isdigit() for value in (id_colaborador, extension, area, departamento)):
+        flash('Colaborador, área, departamento y extensión deben contener valores válidos.', 'danger')
         return redirect(url_for('crud_extensiones'))
 
-    # Si el id_colaborador viene vacío o no numérico, conservar el actual de la fila
-    if not id_colaborador or not id_colaborador.isdigit():
-        cur = mysql.connection.cursor()
-        cur.execute("SELECT ID_COLABORADOR FROM Extensiones WHERE ID_EXTENSIONES = %s", (id,))
-        row = cur.fetchone()
-        cur.close()
-        if row and row[0] is not None:
-            id_colaborador = row[0]
-        else:
-            flash('No se pudo determinar el colaborador asociado a la extensión.', 'danger')
-            return redirect(url_for('crud_extensiones'))
+    id_col, ext_val, area_id, departamento_id = map(int, (id_colaborador, extension, area, departamento))
 
     # Ejecutar actualización
+    cur = mysql.connection.cursor()
     try:
-        cur = mysql.connection.cursor()
+        cur.execute("""
+            SELECT cg.AREA, cg.DEPARTAMENTO
+            FROM Colaboradores c
+            LEFT JOIN Cargos cg ON c.CARGO = cg.ID_CARGOS
+            WHERE c.ID_COLABORADOR = %s
+        """, (id_col,))
+        asignacion = cur.fetchone()
+        if not asignacion or asignacion[0] is None or asignacion[1] is None:
+            flash('El colaborador debe tener un cargo con área y departamento asignados.', 'danger')
+            cur.close()
+            return redirect(url_for('crud_extensiones'))
+        if area_id != asignacion[0] or departamento_id != asignacion[1]:
+            flash('El área y el departamento deben coincidir con el cargo del colaborador seleccionado.', 'danger')
+            cur.close()
+            return redirect(url_for('crud_extensiones'))
+
         cur.execute(
-            "UPDATE Extensiones SET ID_COLABORADOR = %s, EXTENSION = %s WHERE ID_EXTENSIONES = %s",
-            (id_colaborador, int(extension), id)
+            "UPDATE Extensiones SET ID_COLABORADOR = %s, EXTENSION = %s, AREA = %s, DEPARTAMENTO = %s WHERE ID_EXTENSIONES = %s",
+            (id_col, ext_val, area_id, departamento_id, id)
         )
         mysql.connection.commit()
         cur.close()

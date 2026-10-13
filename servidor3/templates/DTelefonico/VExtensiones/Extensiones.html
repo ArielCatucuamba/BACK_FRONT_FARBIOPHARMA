@@ -102,7 +102,7 @@
 </head>
 
 <body>
-    <div style="display: flex; min-height: 100vh;">
+    <div class="directory-layout">
         <nav class="sidebar">
             <div class="logo">
                 <img src="/static/images/logo_Farbiopharma.png" alt="Farbiopharma"
@@ -115,7 +115,7 @@
                 <li><button class="menu-btn" onclick="location.href='/login'" type="button"><i class="bi bi-person-circle"></i> Iniciar sesión</button></li>
             </ul>
         </nav>
-        <div class="main-content" style="width:100%;">
+        <main class="main-content directory-content">
             <h2 class="mb-4" style="color:#14506b; font-weight:700; text-align:left;">Extensiones Telefónicas</h2>
             <div class="d-flex gap-3 mb-4" style="justify-content:left;">
                 <input type="text" id="filtroNombre" class="form-control shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" placeholder="Filtrar por Nombre" onkeyup="filtrarTabla()">
@@ -142,6 +142,7 @@
             <div class="card shadow-sm"
                 style="border-radius:18px; background:#fff; border:2px solid #e3eafc; width:100%;">
                 <div class="card-body p-0">
+                    <div class="table-responsive directory-table-wrap">
                     <table class="table mb-0" style="border-radius:12px; overflow:hidden; width:100%;">
                         <thead style="background:#14506b; color:#fff;">
                             <tr style="border-radius:12px;">
@@ -169,9 +170,10 @@
                                 {% endfor %}
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
-        </div>
+        </main>
         <script>
             // Normaliza cadenas: quita tildes/diacríticos, trim y pasa a minúsculas.
             function normalizeStr(s) {
@@ -291,7 +293,6 @@
                 initDependentSelects();
             });
         </script>
-    </div>
     </div>
     <script src="{{ url_for('static', filename='js/crud-search.js') }}"></script>
 </body>
