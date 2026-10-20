@@ -8,9 +8,6 @@
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/crud-theme.css') }}">
-	<style>
-		.plate-badge { display: inline-block; min-width: 100px; padding: .45rem .75rem; border: 1px solid #cbd9e2; border-radius: 8px; background: #fff; color: #0d3b4e; font-weight: 750; letter-spacing: .055em; text-align: center; box-shadow: inset 0 0 0 2px #f5f8fa; }
-	</style>
 </head>
 
 <body>
@@ -54,7 +51,7 @@
 			</div>
 
 			<div class="table-responsive table-wrap">
-				<table class="table vehicle-table align-middle" id="tablaVehiculos">
+				<table class="table table-bordered table-fixed vehicle-table align-middle" id="tablaVehiculos">
 					<thead>
 						<tr class="fila-vehiculo">
 							<th>ID</th>
@@ -70,21 +67,21 @@
 						{% for vehiculo in vehiculos %}
 						<tr class="fila-vehiculo">
 							<td>{{ vehiculo[0] }}</td>
-							<td><span class="plate-badge">{{ vehiculo[1] }}</span></td>
+							<td>{{ vehiculo[1] }}</td>
 							<td class="vehiculo-busqueda">{{ vehiculo[2] }}</td>
 							<td class="vehiculo-busqueda">{{ vehiculo[3] }}</td>
 							<td class="vehiculo-busqueda">{{ vehiculo[4] }}</td>
 							<td class="vehiculo-busqueda">{{ vehiculo[5] or 'Sin asignar' }}</td>
-							<td class="text-center text-nowrap">
+							<td>
 								<div class="action-buttons">
-								<button type="button" class="btn btn-sm btn-primary btn-icon" title="Editar" aria-label="Editar vehículo"
+								<button type="button" class="btn btn-sm btn-primary btn-action" title="Editar" aria-label="Editar vehículo"
 									data-bs-toggle="modal" data-bs-target="#modalEditar"
 									data-id="{{ vehiculo[0] }}" data-placa="{{ vehiculo[1]|e }}"
 									data-marca="{{ vehiculo[2]|e }}" data-modelo="{{ vehiculo[3]|e }}"
 									data-color="{{ vehiculo[4]|e }}" data-conductor="{{ (vehiculo[5] or '')|e }}"
 									onclick="prepararEdicion(this)"><i class="bi bi-pencil"></i></button>
 								<form method="POST" action="{{ url_for('eliminar_vehiculo', id=vehiculo[0]) }}" class="d-inline formulario-eliminar">
-									<button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="Eliminar" aria-label="Eliminar vehículo"><i class="bi bi-trash"></i></button>
+									<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar" aria-label="Eliminar vehículo"><i class="bi bi-trash"></i></button>
 								</form>
 								</div>
 							</td>

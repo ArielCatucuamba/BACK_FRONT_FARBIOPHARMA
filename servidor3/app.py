@@ -64,252 +64,6 @@ def wait_for_db():
     # Si no pudimos conectar, lanzar excepción con contexto
     raise Exception(f"❌ No se pudo conectar a la base de datos después de {max_retries} intentos")
 
-def init_db():
-    """Inicializar las tablas de la base de datos"""
-    with app.app_context():
-        cur = mysql.connection.cursor()
-        
-        # Crear tabla de usuarios
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS usuarios (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                cedula VARCHAR(10) UNIQUE NOT NULL,
-                email VARCHAR(100) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
-                rol VARCHAR(50) NOT NULL DEFAULT 'usuario',
-                estado VARCHAR(20) NOT NULL DEFAULT 'activo',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Crear tabla de áreas
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Areas (
-                ID_AREAS INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                AREA VARCHAR(100) NOT NULL
-            )
-        """)
-
-        # Crear tabla de departamentos
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Departamentos (
-                ID_DEPARTAMENTOS INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-                DEPARTAMENTO VARCHAR(100) NOT NULL
-            )
-        """)
-
-        # Crear tabla de ubicaciones
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Ubicaciones (
-                ID_UBICACIONES INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-                DESCRIPCION VARCHAR(150) NOT NULL,
-                GEOLOCALIZACION VARCHAR(100) NOT NULL,
-                DIRECCION VARCHAR(100) NOT NULL
-            )
-        """)
-
-        # Crear tabla de cargos relacionada con áreas y departamentos
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Cargos (
-                ID_CARGOS INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-                DESCRIPCION VARCHAR(150) NOT NULL,
-                AREA INT DEFAULT NULL,
-                DEPARTAMENTO INT DEFAULT NULL,
-                KEY AREA (AREA),
-                KEY DEPARTAMENTO (DEPARTAMENTO),
-                CONSTRAINT fk_app_Cargos_Area FOREIGN KEY (AREA) REFERENCES Areas (ID_AREAS),
-                CONSTRAINT fk_app_Cargos_Departamento FOREIGN KEY (DEPARTAMENTO) REFERENCES Departamentos (ID_DEPARTAMENTOS)
-            )
-        """)
-
-        # Relaciona cada cargo con su superior dentro de un área, departamento y planta.
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Jerarquia (
-                ID_JERARQUIA INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-                CARGO INT NOT NULL,
-                SUPERIOR_JERARQUICO INT DEFAULT NULL,
-                DEPARTAMENTO INT NOT NULL,
-                AREA INT NOT NULL,
-                PLANTA VARCHAR(100) NOT NULL,
-                UNIQUE KEY jerarquia_contexto_unique (CARGO, DEPARTAMENTO, AREA, PLANTA),
-                KEY SUPERIOR_JERARQUICO (SUPERIOR_JERARQUICO),
-                KEY DEPARTAMENTO (DEPARTAMENTO),
-                KEY AREA (AREA),
-                CONSTRAINT fk_app_Jerarquia_Cargo FOREIGN KEY (CARGO) REFERENCES Cargos (ID_CARGOS),
-                CONSTRAINT fk_app_Jerarquia_Superior FOREIGN KEY (SUPERIOR_JERARQUICO) REFERENCES Cargos (ID_CARGOS),
-                CONSTRAINT fk_app_Jerarquia_Departamento FOREIGN KEY (DEPARTAMENTO) REFERENCES Departamentos (ID_DEPARTAMENTOS),
-                CONSTRAINT fk_app_Jerarquia_Area FOREIGN KEY (AREA) REFERENCES Areas (ID_AREAS)
-            )
-        """)
-
-        # Crear tabla de colaboradores relacionada con áreas, departamentos, cargos y ubicaciones
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Colaboradores (
-                ID_COLABORADOR INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-                NOMBRE VARCHAR(100) NOT NULL,
-                ESTADO ENUM('ACTIVO', 'AUSENTE') NOT NULL DEFAULT 'ACTIVO',
-                DEPARTAMENTO INT DEFAULT NULL,
-                AREA INT DEFAULT NULL,
-                CARGO INT DEFAULT NULL,
-                UBICACION INT DEFAULT NULL,
-                KEY NOMBRE (NOMBRE),
-                KEY DEPARTAMENTO (DEPARTAMENTO),
-                KEY AREA (AREA),
-                KEY CARGO (CARGO),
-                KEY UBICACION (UBICACION),
-                CONSTRAINT fk_app_Colaboradores_Departamento FOREIGN KEY (DEPARTAMENTO) REFERENCES Departamentos (ID_DEPARTAMENTOS),
-                CONSTRAINT fk_app_Colaboradores_Area FOREIGN KEY (AREA) REFERENCES Areas (ID_AREAS),
-                CONSTRAINT fk_app_Colaboradores_Cargo FOREIGN KEY (CARGO) REFERENCES Cargos (ID_CARGOS),
-                CONSTRAINT fk_app_Colaboradores_Ubicacion FOREIGN KEY (UBICACION) REFERENCES Ubicaciones (ID_UBICACIONES)
-            )
-        """)
-
-        # Migración para bases creadas antes de incorporar el estado del colaborador.
-        cur.execute("""
-            SELECT COUNT(*)
-            FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = 'Colaboradores'
-              AND COLUMN_NAME = 'ESTADO'
-        """)
-        if cur.fetchone()[0] == 0:
-            cur.execute("""
-                ALTER TABLE Colaboradores
-                ADD COLUMN ESTADO ENUM('ACTIVO', 'AUSENTE') NOT NULL DEFAULT 'ACTIVO'
-                AFTER NOMBRE
-            """)
-
-
-        # Crear tabla de extensiones con relaciones directas a colaborador, área y departamento.
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Extensiones (
-                ID_EXTENSIONES INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-                ID_COLABORADOR INT NOT NULL,
-                EXTENSION INT NOT NULL,
-                AREA INT NULL,
-                DEPARTAMENTO INT NULL,
-                KEY ID_COLABORADOR (ID_COLABORADOR),
-                KEY idx_app_Extensiones_Area (AREA),
-                KEY idx_app_Extensiones_Departamento (DEPARTAMENTO),
-                CONSTRAINT fk_app_Extensiones_Colaborador FOREIGN KEY (ID_COLABORADOR) REFERENCES Colaboradores (ID_COLABORADOR),
-                CONSTRAINT fk_app_Extensiones_Area FOREIGN KEY (AREA) REFERENCES Areas (ID_AREAS),
-                CONSTRAINT fk_app_Extensiones_Departamento FOREIGN KEY (DEPARTAMENTO) REFERENCES Departamentos (ID_DEPARTAMENTOS)
-            )
-        """)
-
-        # Migrar tablas existentes que todavía no almacenan el área y departamento.
-        for column_name in ('AREA', 'DEPARTAMENTO'):
-            cur.execute("""
-                SELECT COUNT(*)
-                FROM information_schema.COLUMNS
-                WHERE TABLE_SCHEMA = DATABASE()
-                  AND TABLE_NAME = 'Extensiones'
-                  AND COLUMN_NAME = %s
-            """, (column_name,))
-            if cur.fetchone()[0] == 0:
-                cur.execute(f"ALTER TABLE Extensiones ADD COLUMN {column_name} INT NULL")
-
-        # Para datos históricos, conservar el contexto actual del cargo del colaborador.
-        cur.execute("""
-            UPDATE Extensiones e
-            LEFT JOIN Colaboradores c ON e.ID_COLABORADOR = c.ID_COLABORADOR
-            LEFT JOIN Cargos cg ON c.CARGO = cg.ID_CARGOS
-            SET e.AREA = COALESCE(e.AREA, cg.AREA),
-                e.DEPARTAMENTO = COALESCE(e.DEPARTAMENTO, cg.DEPARTAMENTO)
-            WHERE e.AREA IS NULL OR e.DEPARTAMENTO IS NULL
-        """)
-
-        # Exigir las relaciones para todas las filas cuando los datos previos lo permiten.
-        cur.execute("SELECT COUNT(*) FROM Extensiones WHERE AREA IS NULL OR DEPARTAMENTO IS NULL")
-        if cur.fetchone()[0] == 0:
-            cur.execute("ALTER TABLE Extensiones MODIFY AREA INT NOT NULL, MODIFY DEPARTAMENTO INT NOT NULL")
-
-        for index_name, column_name in (
-            ('idx_app_Extensiones_Area', 'AREA'),
-            ('idx_app_Extensiones_Departamento', 'DEPARTAMENTO')
-        ):
-            cur.execute("""
-                SELECT COUNT(*)
-                FROM information_schema.STATISTICS
-                WHERE TABLE_SCHEMA = DATABASE()
-                  AND TABLE_NAME = 'Extensiones'
-                  AND INDEX_NAME = %s
-            """, (index_name,))
-            if cur.fetchone()[0] == 0:
-                cur.execute(f"CREATE INDEX {index_name} ON Extensiones ({column_name})")
-
-        for constraint_name, column_name, referenced_table, referenced_column in (
-            ('fk_app_Extensiones_Area', 'AREA', 'Areas', 'ID_AREAS'),
-            ('fk_app_Extensiones_Departamento', 'DEPARTAMENTO', 'Departamentos', 'ID_DEPARTAMENTOS')
-        ):
-            cur.execute("""
-                SELECT COUNT(*)
-                FROM information_schema.TABLE_CONSTRAINTS
-                WHERE CONSTRAINT_SCHEMA = DATABASE()
-                  AND TABLE_NAME = 'Extensiones'
-                  AND CONSTRAINT_NAME = %s
-                  AND CONSTRAINT_TYPE = 'FOREIGN KEY'
-            """, (constraint_name,))
-            if cur.fetchone()[0] == 0:
-                cur.execute(
-                    f"ALTER TABLE Extensiones ADD CONSTRAINT {constraint_name} "
-                    f"FOREIGN KEY ({column_name}) REFERENCES {referenced_table} ({referenced_column})"
-                )
-
-        # Crear tabla de celulares relacionada con áreas, departamentos y colaboradores (por ID)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Celulares (
-                ID_CELULARES INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-                ID_COLABORADOR INT NOT NULL,
-                CELULAR BIGINT NOT NULL,
-                AREA INT NOT NULL,
-                DEPARTAMENTO INT NOT NULL,
-                KEY AREA (AREA),
-                KEY DEPARTAMENTO (DEPARTAMENTO),
-                KEY ID_COLABORADOR (ID_COLABORADOR),
-                CONSTRAINT fk_app_Celulares_Area FOREIGN KEY (AREA) REFERENCES Areas (ID_AREAS),
-                CONSTRAINT fk_app_Celulares_Departamento FOREIGN KEY (DEPARTAMENTO) REFERENCES Departamentos (ID_DEPARTAMENTOS),
-                CONSTRAINT fk_app_Celulares_Colaborador FOREIGN KEY (ID_COLABORADOR) REFERENCES Colaboradores (ID_COLABORADOR)
-            )
-        """)
-
-        # Crear tabla de correos relacionada con áreas, departamentos y colaboradores (por ID)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Correos (
-                ID_CORREOS INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-                ID_COLABORADOR INT NOT NULL,
-                CORREO VARCHAR(50) NOT NULL,
-                AREA INT NOT NULL,
-                DEPARTAMENTO INT NOT NULL,
-                KEY AREA (AREA),
-                KEY DEPARTAMENTO (DEPARTAMENTO),
-                KEY ID_COLABORADOR (ID_COLABORADOR),
-                CONSTRAINT fk_app_Correos_Area FOREIGN KEY (AREA) REFERENCES Areas (ID_AREAS),
-                CONSTRAINT fk_app_Correos_Departamento FOREIGN KEY (DEPARTAMENTO) REFERENCES Departamentos (ID_DEPARTAMENTOS),
-                CONSTRAINT fk_app_Correos_Colaborador FOREIGN KEY (ID_COLABORADOR) REFERENCES Colaboradores (ID_COLABORADOR)
-            )
-        """)
-
-        # Crear tabla de vehículos; el conductor asignado es opcional.
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS Vehiculos (
-                ID_VEHICULOS INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-                PLACA VARCHAR(20) NOT NULL,
-                MARCA VARCHAR(80) NOT NULL,
-                MODELO VARCHAR(80) NOT NULL,
-                COLOR VARCHAR(50) NOT NULL,
-                CONDUCTOR_ASIGNADO VARCHAR(100) DEFAULT NULL,
-                UNIQUE KEY vehiculos_placa_unique (PLACA)
-            )
-        """)
-        
-        
-        
-        mysql.connection.commit()
-        cur.close()
-
-
 def verificar_password(password, password_guardado):
     """Verifica hashes bcrypt y, para migración, contraseñas antiguas en texto."""
     if not password_guardado:
@@ -809,9 +563,10 @@ def jerarquia_crea_ciclo(cur, cargo_id, superior_id, departamento_id, area_id, p
 def resolver_aprobador_efectivo(cur, colaborador_id):
     """Busca el primer ocupante activo sobre el colaborador dentro de su contexto."""
     cur.execute("""
-        SELECT col.ID_COLABORADOR, col.NOMBRE, col.CARGO, col.DEPARTAMENTO,
-               col.AREA, ubic.DESCRIPCION
+         SELECT col.ID_COLABORADOR, col.NOMBRE, col.CARGO, cargo.DEPARTAMENTO,
+             cargo.AREA, ubic.DESCRIPCION
         FROM Colaboradores col
+         LEFT JOIN Cargos cargo ON col.CARGO = cargo.ID_CARGOS
         LEFT JOIN Ubicaciones ubic ON col.UBICACION = ubic.ID_UBICACIONES
         WHERE col.ID_COLABORADOR = %s
     """, (colaborador_id,))
@@ -850,15 +605,18 @@ def resolver_aprobador_efectivo(cur, colaborador_id):
         visitados.add(superior_id)
 
         cur.execute("""
-            SELECT ID_COLABORADOR, NOMBRE
-            FROM Colaboradores
-            WHERE CARGO = %s AND DEPARTAMENTO = %s AND AREA = %s
-                            AND ID_COLABORADOR <> %s
-              AND UBICACION = (
+                        SELECT ocupante.ID_COLABORADOR, ocupante.NOMBRE
+                        FROM Colaboradores ocupante
+                        INNER JOIN Cargos cargo_ocupante ON ocupante.CARGO = cargo_ocupante.ID_CARGOS
+                        WHERE ocupante.CARGO = %s
+                            AND cargo_ocupante.DEPARTAMENTO = %s
+                            AND cargo_ocupante.AREA = %s
+                            AND ocupante.ID_COLABORADOR <> %s
+                            AND ocupante.UBICACION = (
                   SELECT ID_UBICACIONES FROM Ubicaciones WHERE DESCRIPCION = %s LIMIT 1
               )
-              AND ESTADO = 'ACTIVO'
-            ORDER BY NOMBRE
+                            AND ocupante.ESTADO = 'ACTIVO'
+                        ORDER BY ocupante.NOMBRE
                 """, (superior_id, departamento, area, colaborador_id, planta))
         ocupantes_activos = cur.fetchall()
         if ocupantes_activos:
@@ -869,9 +627,13 @@ def resolver_aprobador_efectivo(cur, colaborador_id):
             return resultado
 
         cur.execute("""
-            SELECT COUNT(*) FROM Colaboradores
-            WHERE CARGO = %s AND DEPARTAMENTO = %s AND AREA = %s
-              AND UBICACION = (
+                        SELECT COUNT(*)
+                        FROM Colaboradores ocupante
+                        INNER JOIN Cargos cargo_ocupante ON ocupante.CARGO = cargo_ocupante.ID_CARGOS
+                        WHERE ocupante.CARGO = %s
+                            AND cargo_ocupante.DEPARTAMENTO = %s
+                            AND cargo_ocupante.AREA = %s
+                            AND ocupante.UBICACION = (
                   SELECT ID_UBICACIONES FROM Ubicaciones WHERE DESCRIPCION = %s LIMIT 1
               )
         """, (superior_id, departamento, area, planta))
@@ -1068,20 +830,38 @@ def crud_colaboradores():
     ubicaciones = cur.fetchall()
     # Crear
     if request.method == 'POST':
-        nombre = request.form.get('nombre')
-        departamento = request.form.get('departamento')
-        area = request.form.get('area')
-        cargo = request.form.get('cargo')
-        ubicacion = request.form.get('ubicacion')
+        nombre = (request.form.get('nombre') or '').strip()
+        cargo = (request.form.get('cargo') or '').strip()
+        ubicacion = (request.form.get('ubicacion') or '').strip()
         estado = (request.form.get('estado') or 'ACTIVO').strip().upper()
-        if not all([nombre, departamento, area, cargo, ubicacion]):
+        if not all([nombre, cargo, ubicacion]):
             flash('Todos los campos son obligatorios.', 'danger')
         elif estado not in ('ACTIVO', 'AUSENTE'):
             flash('El estado del colaborador no es válido.', 'danger')
         else:
             try:
-                cur.execute("INSERT INTO Colaboradores (NOMBRE, ESTADO, DEPARTAMENTO, AREA, CARGO, UBICACION) VALUES (%s, %s, %s, %s, %s, %s)",
-                            (nombre, estado, departamento, area, cargo, ubicacion))
+                if not cargo.isdigit():
+                    cur.execute("SELECT ID_CARGOS FROM Cargos WHERE DESCRIPCION = %s", (cargo,))
+                    cargo_row = cur.fetchone()
+                    cargo = str(cargo_row[0]) if cargo_row else ''
+                if not cargo.isdigit():
+                    raise ValueError('El cargo seleccionado no es válido.')
+
+                cur.execute("SELECT AREA, DEPARTAMENTO FROM Cargos WHERE ID_CARGOS = %s", (cargo,))
+                cargo_contexto = cur.fetchone()
+                if not cargo_contexto:
+                    raise ValueError('El cargo seleccionado no existe.')
+
+                area_form = (request.form.get('area') or '').strip()
+                departamento_form = (request.form.get('departamento') or '').strip()
+                if ((area_form and area_form.isdigit() and int(area_form) != cargo_contexto[0]) or
+                        (departamento_form and departamento_form.isdigit() and int(departamento_form) != cargo_contexto[1])):
+                    raise ValueError('El área y departamento deben corresponder al cargo seleccionado.')
+
+                cur.execute(
+                    "INSERT INTO Colaboradores (NOMBRE, ESTADO, CARGO, UBICACION) VALUES (%s, %s, %s, %s)",
+                    (nombre, estado, int(cargo), int(ubicacion))
+                )
                 mysql.connection.commit()
                 flash('Colaborador agregado exitosamente.', 'success')
             except Exception as e:
@@ -1120,7 +900,7 @@ def editar_colaborador(id):
     estado = (request.form.get('estado') or '').strip().upper()
 
     # Validaciones básicas
-    if not all([nombre, departamento, area, cargo, ubicacion, estado]):
+    if not all([nombre, cargo, ubicacion, estado]):
         flash('Todos los campos son obligatorios.', 'danger')
         return redirect(url_for('crud_colaboradores'))
     if estado not in ('ACTIVO', 'AUSENTE'):
@@ -1146,6 +926,16 @@ def editar_colaborador(id):
 
     cur = mysql.connection.cursor()
     try:
+        cur.execute("SELECT AREA, DEPARTAMENTO FROM Cargos WHERE ID_CARGOS = %s", (int(cargo),))
+        cargo_contexto = cur.fetchone()
+        if not cargo_contexto:
+            raise ValueError('El cargo seleccionado no existe.')
+        area_form = (request.form.get('area') or '').strip()
+        departamento_form = (request.form.get('departamento') or '').strip()
+        if ((area_form and area_form.isdigit() and int(area_form) != cargo_contexto[0]) or
+                (departamento_form and departamento_form.isdigit() and int(departamento_form) != cargo_contexto[1])):
+            raise ValueError('El área y departamento deben corresponder al cargo seleccionado.')
+
         # Obtener el nombre anterior del colaborador
         cur.execute("SELECT NOMBRE FROM Colaboradores WHERE ID_COLABORADOR = %s", (id,))
         old_row = cur.fetchone()
@@ -1155,8 +945,10 @@ def editar_colaborador(id):
             # Ya no es necesario actualizar NOMBRE en tablas relacionadas, solo en colaboradores
             pass
         # Actualizar colaborador
-        cur.execute("UPDATE Colaboradores SET NOMBRE = %s, ESTADO = %s, DEPARTAMENTO = %s, AREA = %s, CARGO = %s, UBICACION = %s WHERE ID_COLABORADOR = %s",
-                (nombre, estado, departamento, area, cargo, ubicacion, id))
+        cur.execute(
+            "UPDATE Colaboradores SET NOMBRE = %s, ESTADO = %s, CARGO = %s, UBICACION = %s WHERE ID_COLABORADOR = %s",
+            (nombre, estado, int(cargo), int(ubicacion), id)
+        )
         mysql.connection.commit()
         flash('Colaborador editado correctamente.', 'success')
     except Exception as e:
@@ -1646,6 +1438,5 @@ def eliminar_vehiculo(id):
 if __name__ == "__main__":
     print("🚀 Iniciando servidor Flask...")
     wait_for_db()
-    init_db()
     print("✅ Servidor listo para recibir conexiones")
     app.run(host='0.0.0.0', debug=True)

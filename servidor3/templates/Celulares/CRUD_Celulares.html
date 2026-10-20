@@ -332,6 +332,7 @@
 					<td class="cel-area" data-area-id="{{ cel[5] }}">{{ cel[3] }}</td>
 					<td class="cel-departamento" data-dep-id="{{ cel[6] }}">{{ cel[4] }}</td>
 					<td>
+						<div class="action-buttons">
 						<button type="button" class="btn btn-sm btn-primary btn-action" title="Editar"
 							data-bs-toggle="modal" data-bs-target="#modalEditar"
 							data-id="{{ cel[0] }}"
@@ -345,6 +346,7 @@
 						<form method="POST" action="{{ url_for('eliminar_celular', id=cel[0]) }}" class="d-inline confirm-delete-celular">
 							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i class="bi bi-trash"></i></button>
 						</form>
+						</div>
 					</td>
 				</tr>
 				{% endfor %}

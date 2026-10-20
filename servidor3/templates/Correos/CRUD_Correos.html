@@ -340,6 +340,7 @@
 					<td class="cor-area" data-area-id="{{ cor[5] }}">{{ cor[3] }}</td>
 					<td class="cor-departamento" data-dep-id="{{ cor[6] }}">{{ cor[4] }}</td>
 					<td>
+						<div class="action-buttons">
 						<button type="button" class="btn btn-sm btn-primary btn-action" title="Editar"
 							data-bs-toggle="modal" data-bs-target="#modalEditar"
 							data-id="{{ cor[0] }}"
@@ -353,6 +354,7 @@
 						<form method="POST" action="{{ url_for('eliminar_correo', id=cor[0]) }}" class="d-inline confirm-delete-correo">
 							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i class="bi bi-trash"></i></button>
 						</form>
+						</div>
 					</td>
 				</tr>
 				{% endfor %}

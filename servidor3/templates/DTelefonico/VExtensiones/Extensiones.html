@@ -4,109 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extensiones - Navegación</title>
+    <title>Directorio de Extensiones</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/crud-theme.css') }}">
-    <style>
-        body {
-            background: #f7faff;
-        }
-        
-        .sidebar {
-            background: #fff;
-            border-radius: 20px;
-            width: 280px;
-            min-width: 280px;
-            padding: 2rem 1.5rem;
-            margin: 32px 0 32px 32px;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
-            border: 2px solid #e3eafc;
-        }
-
-        .sidebar .logo {
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: #2d3a4a;
-            display: flex;
-            align-items: center;
-            margin: 32px 0 32px 0px;
-            margin-bottom: 2rem;
-            justify-content: center;
-        }
-
-        .sidebar .search-box {
-            width: 100%;
-            margin-bottom: 2rem;
-        }
-
-        .sidebar .search-box input {
-            border-radius: 12px;
-            margin-left: 10px;
-            padding: 2rem 0 2rem 0;
-            padding: 0.7rem 1rem;
-            width: 100%;
-            font-size: 1rem;
-        }
-
-        .sidebar .menu-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            width: 100%;
-        }
-
-        .sidebar .menu-list li {
-            margin-bottom: 18px;
-        }
-
-        .sidebar .menu-btn {
-            width: 100%;
-            background: none;
-            border: none;
-            text-align: left;
-            padding: 12px 16px;
-            font-size: 1.15rem;
-            color: #2d3a4a;
-            border-radius: 10px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            transition: background 0.2s, color 0.2s;
-        }
-
-        .sidebar .menu-btn.active,
-        .sidebar .menu-btn:hover {
-            background: #e3eafc;
-            color: #14506b;
-        }
-
-        .sidebar .menu-badge {
-            background: #ffb700;
-            color: #fff;
-            border-radius: 50%;
-            font-size: 0.85rem;
-            padding: 2px 8px;
-            margin-left: 8px;
-        }
-
-        .main-content {
-            margin-left: 0px;
-            padding: 2rem 50px 2rem 50px;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/directory-theme.css') }}">
 </head>
 
-<body>
+<body data-directory-page="extensiones">
     <div class="directory-layout">
-        <nav class="sidebar">
+        <nav class="sidebar" aria-label="Navegación del directorio">
             <div class="logo">
-                <img src="/static/images/logo_Farbiopharma.png" alt="Farbiopharma"
-                    style="height: 40px; display: block; margin: 0 auto;">
+                <img src="/static/images/logo_Farbiopharma.png" alt="Farbiopharma">
             </div>
             <ul class="menu-list">
                 <li><button class="menu-btn active" onclick="location.href='/vextensiones'" type="button"><i class="bi bi-telephone"></i> Extensiones</button></li>
@@ -115,186 +23,66 @@
                 <li><button class="menu-btn" onclick="location.href='/login'" type="button"><i class="bi bi-person-circle"></i> Iniciar sesión</button></li>
             </ul>
         </nav>
-        <main class="main-content directory-content">
-            <h2 class="mb-4" style="color:#14506b; font-weight:700; text-align:left;">Extensiones Telefónicas</h2>
-            <div class="d-flex gap-3 mb-4" style="justify-content:left;">
-                <input type="text" id="filtroNombre" class="form-control shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" placeholder="Filtrar por Nombre" onkeyup="filtrarTabla()">
-                <input type="text" id="filtroExtension" class="form-control shadow-sm" style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;" placeholder="Filtrar por Extensión" onkeyup="filtrarTabla()">
-                <select id="filtroDepartamento" class="form-select shadow-sm"
-                    style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;"
-                    onchange="filtrarTabla()">
-                        <option value="">Filtrar por Departamento</option>
+        <main class="directory-content">
+            <header class="directory-page-header">
+                <div class="header-icon" aria-hidden="true"><i class="bi bi-telephone-fill"></i></div>
+                <div>
+                    <h1>Directorio de Extensiones</h1>
+                    <p>Consulta las extensiones telefónicas del personal.</p>
+                </div>
+            </header>
+            <section class="directory-filter-card" aria-label="Filtros de extensiones">
+                <div class="input-group directory-search">
+                    <span class="input-group-text" aria-hidden="true"><i class="bi bi-search"></i></span>
+                    <input type="search" id="filtroNombre" class="form-control" placeholder="Buscar por nombre o extensión..." aria-label="Buscar extensiones" data-filter="search">
+                </div>
+                <select id="filtroDepartamento" class="form-select" aria-label="Filtrar por departamento" data-filter="department">
+                    <option value="">Todos los departamentos</option>
                         {% set deps_unicos = extensiones | map(attribute=4) | unique | list %}
                         {% for dep in deps_unicos %}
                             {% if dep %}<option value="{{ dep }}">{{ dep }}</option>{% endif %}
                         {% endfor %}
                 </select>
-                <select id="filtroArea" class="form-select shadow-sm"
-                    style="width:230px; background:#f7faff; border:1.5px solid #e3eafc; color:#14506b;"
-                    onchange="filtrarTabla()">
-                        <option value="">Filtrar por Área</option>
+                <select id="filtroArea" class="form-select" aria-label="Filtrar por área" data-filter="area">
+                    <option value="">Todas las áreas</option>
                         {% set areas_unicas = extensiones | map(attribute=3) | unique | list %}
                         {% for area in areas_unicas %}
                             {% if area %}<option value="{{ area }}">{{ area }}</option>{% endif %}
                         {% endfor %}
                 </select>
-            </div>
-            <div class="card shadow-sm"
-                style="border-radius:18px; background:#fff; border:2px solid #e3eafc; width:100%;">
-                <div class="card-body p-0">
-                    <div class="table-responsive directory-table-wrap">
-                    <table class="table mb-0" style="border-radius:12px; overflow:hidden; width:100%;">
-                        <thead style="background:#14506b; color:#fff;">
-                            <tr style="border-radius:12px;">
-                                <th style="border:none; font-weight:600; min-width:220px;">Nombre</th>
-                                <th style="border:none; font-weight:600; min-width:120px;">Extensión</th>
-                                <th style="border:none; font-weight:600; min-width:180px;">Área</th>
-                                <th style="border:none; font-weight:600; min-width:180px;">Departamento</th>
+            </section>
+            <section class="directory-table-card" aria-label="Listado de extensiones">
+                <div class="directory-table-wrap">
+                    <table class="table directory-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Nombre</th>
+                                <th scope="col">Extensión</th>
+                                <th scope="col">Área</th>
+                                <th scope="col">Departamento</th>
                             </tr>
                         </thead>
                         <tbody id="tablaExtensiones">
                             {% for ext in extensiones %}
-                            <tr{% if loop.index0 % 2==0 %} style="background:#f7faff;" {% else %}
-                                style="background:#fff;" {% endif %}>
-                                <td class="ext-nombre" style="color:#2d3a4a; border:none; min-width:220px;">{{ ext[1] }}
-                                </td>
-                                <td class="ext-extension" style="color:#2d3a4a; border:none; min-width:120px;">{{ ext[2]
-                                    }}</td>
-                                <td class="ext-area"
-                                    style="color:#14506b; border:none; font-weight:500; min-width:180px;">{{ ext[3] }}
-                                </td>
-                                <td class="ext-departamento"
-                                    style="color:#14506b; border:none; font-weight:500; min-width:180px;">{{ ext[4] }}
-                                </td>
-                                </tr>
-                                {% endfor %}
+                            <tr>
+                                <td class="ext-nombre">{{ ext[1] }}</td>
+                                <td class="ext-extension">{{ ext[2] }}</td>
+                                <td class="ext-area">{{ ext[3] }}</td>
+                                <td class="ext-departamento">{{ ext[4] }}</td>
+                            </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
-                    </div>
                 </div>
-            </div>
+                <footer class="directory-table-footer">
+                    <p class="directory-results-count" data-pagination="summary" aria-live="polite"></p>
+                    <nav class="directory-pagination" data-pagination="controls" aria-label="Paginación de extensiones"></nav>
+                </footer>
+                <p class="directory-no-results" role="status" aria-live="polite" hidden></p>
+            </section>
         </main>
-        <script>
-            // Normaliza cadenas: quita tildes/diacríticos, trim y pasa a minúsculas.
-            function normalizeStr(s) {
-                if (!s && s !== '') return '';
-                try {
-                    return s.toString().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-                } catch (e) {
-                    return s.toString().trim().toLowerCase();
-                }
-            }
-
-            function filtrarTabla() {
-                var nombre = normalizeStr(document.getElementById('filtroNombre').value);
-                var extension = normalizeStr(document.getElementById('filtroExtension').value);
-                var area = normalizeStr(document.getElementById('filtroArea').value);
-                var departamento = normalizeStr(document.getElementById('filtroDepartamento').value);
-                var filas = document.querySelectorAll('#tablaExtensiones tr');
-                filas.forEach(function (fila) {
-                    var nombreCelda = normalizeStr(fila.querySelector('.ext-nombre').textContent);
-                    var extensionCelda = normalizeStr(fila.querySelector('.ext-extension').textContent);
-                    var areaCelda = normalizeStr(fila.querySelector('.ext-area').textContent);
-                    var depCelda = normalizeStr(fila.querySelector('.ext-departamento').textContent);
-                    var mostrar = true;
-                    if (nombre && !nombreCelda.includes(nombre)) mostrar = false;
-                    if (extension && !extensionCelda.includes(extension)) mostrar = false;
-                    if (area && areaCelda !== area) mostrar = false;
-                    if (departamento && depCelda !== departamento) mostrar = false;
-                    fila.style.display = mostrar ? '' : 'none';
-                });
-            }
-            
-            // --- Dependent select: actualizar 'Área' según 'Departamento' ---
-            // Construye un mapa de departamento -> set de áreas disponibles en la tabla.
-            function buildDeptAreaMap() {
-                var map = {};
-                var filas = document.querySelectorAll('#tablaExtensiones tr');
-                filas.forEach(function (fila) {
-                    var area = fila.querySelector('.ext-area').textContent.trim();
-                    var dep = fila.querySelector('.ext-departamento').textContent.trim();
-                    if (!dep) return;
-                    if (!map[dep]) map[dep] = new Set();
-                    if (area) map[dep].add(area);
-                });
-                return map;
-            }
-
-            // Guarda el listado completo de áreas (para restaurar cuando no hay filtro de departamento)
-            var FULL_AREAS = [];
-            var DEPT_AREA_MAP = {};
-
-            function initDependentSelects() {
-                var areaSelect = document.getElementById('filtroArea');
-                // Guardar todas las áreas presentes inicialmente
-                FULL_AREAS = Array.from(areaSelect.querySelectorAll('option'))
-                    .map(function(opt){ return opt.value; })
-                    .filter(function(v){ return v !== ''; });
-
-                // Construir mapa dept->areas desde las filas y normalizar claves
-                var map = buildDeptAreaMap();
-                DEPT_AREA_MAP = {};
-                for (var k in map) {
-                    if (Object.prototype.hasOwnProperty.call(map, k)) {
-                        var nk = normalizeStr(k);
-                        DEPT_AREA_MAP[nk] = Array.from(map[k]);
-                    }
-                }
-
-                // Añadir listener: cuando cambie departamento, actualizar áreas
-                var depSelect = document.getElementById('filtroDepartamento');
-                depSelect.addEventListener('change', function(){
-                    updateAreaOptions(this.value);
-                    // Ejecutar el filtrado para reflejar selección
-                    filtrarTabla();
-                });
-
-                // Ajustar inicialmente según el departamento que esté seleccionado (si aplica)
-                updateAreaOptions(depSelect.value);
-            }
-
-            function updateAreaOptions(selectedDept) {
-                var areaSelect = document.getElementById('filtroArea');
-                // Guardar la selección actual (si coincide con nueva lista la conservamos)
-                var current = areaSelect.value;
-                // Eliminar todas las opciones
-                while (areaSelect.firstChild) areaSelect.removeChild(areaSelect.firstChild);
-                // Añadir opción por defecto
-                var opt = document.createElement('option');
-                opt.value = '';
-                opt.textContent = 'Filtrar por Área';
-                areaSelect.appendChild(opt);
-
-                var list = [];
-                if (!selectedDept) {
-                    list = FULL_AREAS.slice();
-                } else {
-                    var nk = normalizeStr(selectedDept);
-                    if (DEPT_AREA_MAP[nk]) list = DEPT_AREA_MAP[nk].slice();
-                }
-                // Ordenar alfabéticamente para mejor UX
-                list.sort();
-                list.forEach(function(a){
-                    var o = document.createElement('option');
-                    o.value = a; o.textContent = a;
-                    areaSelect.appendChild(o);
-                });
-
-                // Si la selección anterior sigue disponible, restaurarla
-                if (current && Array.from(areaSelect.options).some(function(o){ return o.value === current; })) {
-                    areaSelect.value = current;
-                } else {
-                    areaSelect.value = '';
-                }
-            }
-
-            // Inicializar después de que el DOM cargue
-            document.addEventListener('DOMContentLoaded', function(){
-                initDependentSelects();
-            });
-        </script>
     </div>
-    <script src="{{ url_for('static', filename='js/crud-search.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/directory-filters.js') }}"></script>
 </body>
 
 </html>

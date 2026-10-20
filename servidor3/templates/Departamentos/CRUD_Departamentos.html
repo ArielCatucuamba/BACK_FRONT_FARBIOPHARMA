@@ -210,6 +210,7 @@
 					   <td>{{ dep[0] }}</td>
 					   <td class="departamento-nombre">{{ dep[1] }}</td>
 					   <td>
+						   <div class="action-buttons">
 						   <button type="button" class="btn btn-sm btn-primary btn-action" title="Editar"
 							   data-bs-toggle="modal" data-bs-target="#modalEditar" data-id="{{ dep[0] }}"
 							   data-departamento="{{ dep[1]|e }}"
@@ -220,6 +221,7 @@
 							   <button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i
 									   class="bi bi-trash"></i></button>
 						   </form>
+						   </div>
 					   </td>
 				   </tr>
 				{% endfor %}

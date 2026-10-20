@@ -477,6 +477,7 @@ function cerrarAlertaExito() {
 						{% else %}<span class="text-muted" title="{{ resolucion.error if resolucion else '' }}">No disponible</span>{% endif %}
 					</td>
 					<td>
+						<div class="action-buttons">
 						<button type="button" class="btn btn-sm btn-primary btn-action" title="Editar"
 							data-bs-toggle="modal" data-bs-target="#modalEditar"
 							data-id="{{ col[0] }}"
@@ -492,6 +493,7 @@ function cerrarAlertaExito() {
 						<form method="POST" action="{{ url_for('eliminar_colaborador', id=col[0]) }}" class="d-inline confirm-delete-colaborador">
 							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i class="bi bi-trash"></i></button>
 						</form>
+						</div>
 					</td>
 				</tr>
 				{% endfor %}

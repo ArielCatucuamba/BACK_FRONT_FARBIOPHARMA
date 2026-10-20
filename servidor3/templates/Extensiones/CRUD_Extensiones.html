@@ -533,6 +533,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					<td class="ext-area" data-area-id="{{ ext[5] }}">{{ ext[3] }}</td>
 					<td class="ext-departamento" data-dep-id="{{ ext[6] }}">{{ ext[4] }}</td>
 					<td>
+						<div class="action-buttons">
 						<button type="button" class="btn btn-sm btn-primary btn-action" title="Editar"
 							data-bs-toggle="modal" data-bs-target="#modalEditar"
 							data-id="{{ ext[0] }}"
@@ -546,6 +547,7 @@ document.addEventListener('DOMContentLoaded', function() {
 						<form method="POST" action="{{ url_for('eliminar_extension', id=ext[0]) }}" class="d-inline confirm-delete-extension">
 							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i class="bi bi-trash"></i></button>
 						</form>
+						</div>
 					</td>
 				</tr>
 				{% endfor %}

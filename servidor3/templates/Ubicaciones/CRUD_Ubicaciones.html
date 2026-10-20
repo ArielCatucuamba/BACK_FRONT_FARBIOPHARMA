@@ -249,6 +249,7 @@
 					<td>{{ ubi[2] }}</td>
 					<td>{{ ubi[3] }}</td>
 					<td>
+						<div class="action-buttons">
 						<button type="button" class="btn btn-sm btn-primary btn-action" title="Editar"
 							data-bs-toggle="modal" data-bs-target="#modalEditar" data-id="{{ ubi[0] }}"
 							data-descripcion="{{ ubi[1]|e }}" data-geolocalizacion="{{ ubi[2]|e }}"
@@ -259,6 +260,7 @@
 							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i
 									class="bi bi-trash"></i></button>
 						</form>
+						</div>
 					</td>
 				</tr>
 				{% endfor %}

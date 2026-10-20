@@ -258,6 +258,7 @@
 					<td class="cargo-area" data-area-id="{{ cargo[4] }}">{{ cargo[2] }}</td>
 					<td class="cargo-departamento" data-dep-id="{{ cargo[5] }}">{{ cargo[3] }}</td>
 					<td>
+						<div class="action-buttons">
 						<button type="button" class="btn btn-sm btn-primary btn-action" title="Editar"
 							data-bs-toggle="modal" data-bs-target="#modalEditar" data-id="{{ cargo[0] }}"
 							data-descripcion="{{ cargo[1]|e }}" data-area-id="{{ cargo[4] }}" data-dep-id="{{ cargo[5] }}"
@@ -268,6 +269,7 @@
 							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i
 														class="bi bi-trash"></i></button>
 							</form>
+						</div>
 					</td>
 				</tr>
 				{% endfor %}
