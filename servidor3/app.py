@@ -19,14 +19,12 @@ if not hasattr(pkgutil, "get_loader"):
 
 from flask import Flask, abort, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_mysqldb import MySQL
-import bcrypt
 from datetime import timedelta
 import hashlib
 import os
 import re
 import socket
 import time
-import hmac
 
 app = Flask(__name__)
 
@@ -39,13 +37,17 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', 'true').lower() == 'true'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=8)
 app.config['NAVEW_FRONTEND_ORIGIN'] = os.getenv('NAVEW_FRONTEND_ORIGIN', '').strip().rstrip('/')
+if not app.config['NAVEW_FRONTEND_ORIGIN']:
+    raise RuntimeError("NAVEW_FRONTEND_ORIGIN debe configurarse antes de iniciar Flask")
+app.config['NAVEW_LOGIN_URL'] = f"{app.config['NAVEW_FRONTEND_ORIGIN']}/login"
+app.config['NAVEW_LOGOUT_URL'] = f"{app.config['NAVEW_FRONTEND_ORIGIN']}/logout"
 app.config['MAX_CONTENT_LENGTH'] = 4096
 
 # Configuración de la base de datos MySQL
-app.config['MYSQL_HOST'] = os.getenv("DB_HOST") or os.getenv("MYSQL_HOST", "maestro1")
-app.config['MYSQL_USER'] = os.getenv("DB_USER") or os.getenv("MYSQL_USER", "root")
-app.config['MYSQL_PASSWORD'] = os.getenv("DB_PASSWORD") or os.getenv("MYSQL_PASSWORD", "F4rb10PH4rm4")
-app.config['MYSQL_DB'] = os.getenv("DB_NAME") or os.getenv("MYSQL_DB", "db_informacion")
+app.config['MYSQL_HOST'] = os.getenv("DB_HOST") or os.getenv("MYSQL_HOST", "127.0.0.1")
+app.config['MYSQL_USER'] = os.getenv("DB_USER") or os.getenv("MYSQL_USER", "")
+app.config['MYSQL_PASSWORD'] = os.getenv("DB_PASSWORD") or os.getenv("MYSQL_PASSWORD", "")
+app.config['MYSQL_DB'] = os.getenv("DB_NAME") or os.getenv("MYSQL_DB", "")
 app.config['MYSQL_PORT'] = int(os.getenv("DB_PORT") or os.getenv("MYSQL_PORT", 3306))
 
 # Inicializar la base de datos
@@ -157,21 +159,6 @@ def wait_for_db():
     # Si no pudimos conectar, lanzar excepción con contexto
     raise Exception(f"❌ No se pudo conectar a la base de datos después de {max_retries} intentos")
 
-def verificar_password(password, password_guardado):
-    """Verifica hashes bcrypt y, para migración, contraseñas antiguas en texto."""
-    if not password_guardado:
-        return False, False
-    password_bytes = password.encode('utf-8')
-    stored_bytes = password_guardado.encode('utf-8')
-    if password_guardado.startswith(('$2a$', '$2b$', '$2y$')):
-        try:
-            return bcrypt.checkpw(password_bytes, stored_bytes), False
-        except (TypeError, ValueError):
-            return False, False
-    coincide = hmac.compare_digest(password_bytes, stored_bytes)
-    return coincide, coincide
-
-
 @app.route('/')
 def index():
     cur = mysql.connection.cursor()
@@ -189,68 +176,8 @@ def index():
     
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        email = (request.form.get('email') or '').strip().lower()
-        password = request.form.get('password')
-        # Límite de intentos por sesión
-        if 'login_attempts' not in session:
-            session['login_attempts'] = 0
-        import time
-        bloqueado = False
-        if session.get('login_blocked_until'):
-            if time.time() < session['login_blocked_until']:
-                bloqueado = True
-        if session['login_attempts'] >= 5 or bloqueado:
-            if not bloqueado:
-                session['login_blocked_until'] = time.time() + 5*60
-            restante = int(session['login_blocked_until'] - time.time())
-            minutos = restante // 60
-            segundos = restante % 60
-            flash(f'Has superado el límite de intentos. Intenta nuevamente en {minutos}m {segundos}s.', 'danger')
-            return render_template('Login/login.html')
-        if not email or not password:
-            flash('Por favor, complete todos los campos', 'error')
-            return render_template('Login/login.html')
-        cur = mysql.connection.cursor()
-        try:
-            cur.execute("SELECT id, cedula, password, estado, rol FROM usuarios WHERE email = %s", (email,))
-            user = cur.fetchone()
-        finally:
-            cur.close()
-
-        password_ok = False
-        needs_rehash = False
-        if user:
-            estado = str(user[3] or '').strip().lower()
-            if estado not in ('activo', 'active', '1', 'true'):
-                flash('La cuenta está inactiva. Contacta al administrador.', 'danger')
-                return render_template('Login/login.html')
-            password_ok, needs_rehash = verificar_password(password, user[2])
-
-        if user and password_ok:
-            if needs_rehash:
-                cur = mysql.connection.cursor()
-                try:
-                    nuevo_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-                    cur.execute("UPDATE usuarios SET password = %s WHERE id = %s", (nuevo_hash, user[0]))
-                    mysql.connection.commit()
-                finally:
-                    cur.close()
-            session['user_id'] = user[0]
-            session['username'] = user[1]
-            session['user_role'] = user[4]
-            session['login_attempts'] = 0
-            session.pop('login_blocked_until', None)
-            flash('Inicio de sesión exitoso', 'success')
-            return redirect(url_for('menu'))
-        else:
-            session['login_attempts'] += 1
-            intentos_restantes = 5 - session['login_attempts']
-            flash(f'Usuario o contraseña incorrectos. Intentos restantes: {intentos_restantes}', 'error')
-        return render_template('Login/login.html')
-    # Limpiar mensajes flash previos (de otras vistas) al mostrar el login
-    session.pop('_flashes', None)
-    return render_template('Login/login.html')
+    # Compatibilidad con enlaces antiguos; el login central está en NAVEW.
+    return redirect(app.config['NAVEW_LOGIN_URL'])
 
 @app.route('/menu')
 def menu():
@@ -264,68 +191,14 @@ def menu():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == 'POST':
-        cedula = (request.form.get('cedula') or '').strip()
-        email = (request.form.get('email') or '').strip().lower()
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
-        
-        if not all([cedula, email, password, confirm_password]):
-            flash('Por favor, complete todos los campos', 'error')
-            return render_template('Login/register.html')
-
-        if len(cedula) > 10:
-            flash('La cédula no puede superar los 10 caracteres.', 'error')
-            return render_template('Login/register.html')
-        
-        if password != confirm_password:
-            flash('Las contraseñas no coinciden', 'error')
-            return render_template('Login/register.html')
-        
-        # Verificar si el usuario ya existe
-        cur = mysql.connection.cursor()
-        try:
-            cur.execute("SELECT id FROM usuarios WHERE cedula = %s OR email = %s", (cedula, email))
-            existing_user = cur.fetchone()
-
-            if existing_user:
-                flash('La cédula o el email ya están registrados.', 'error')
-                return render_template('Login/register.html')
-
-            password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-            cur.execute(
-                "INSERT INTO usuarios (cedula, email, password, rol, estado) "
-                "VALUES (%s, %s, %s, %s, %s)",
-                (cedula, email, password_hash, 'usuario', 'activo')
-            )
-            mysql.connection.commit()
-        except Exception:
-            mysql.connection.rollback()
-            flash('No se pudo registrar la cuenta. Verifica la cédula y el email.', 'error')
-            return render_template('Login/register.html')
-        finally:
-            cur.close()
-        
-        flash('Usuario registrado exitosamente', 'success')
-        return redirect(url_for('login'))
-    
-    # Limpiar mensajes flash previos (por ejemplo, de login)
-    session.pop('_flashes', None)
-    return render_template('Login/register.html')
-
- # --------------------------------------Cerrar sesión----------------------------------------------------------------------
+    # Compatibilidad con enlaces antiguos; las cuentas se administran en NAVEW.
+    return redirect(app.config['NAVEW_LOGIN_URL'])
 
 @app.route('/logout')
 def logout():
     session.clear()
-    flash('Sesión cerrada exitosamente', 'success')
-    return redirect(url_for('login'))
+    return redirect(app.config['NAVEW_LOGOUT_URL'])
 
-
-
- # --------------------------------------Directorio Telefonico----------------------------------------------------------------------
-
-# Ruta para mostrar la vista de extensiones
 @app.route('/vextensiones')
 def vextensiones():
     cur = mysql.connection.cursor()
