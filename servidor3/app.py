@@ -17,10 +17,13 @@ if not hasattr(pkgutil, "get_loader"):
             return None
     pkgutil.get_loader = _get_loader
 
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, abort, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_mysqldb import MySQL
 import bcrypt
+from datetime import timedelta
+import hashlib
 import os
+import re
 import socket
 import time
 import hmac
@@ -28,7 +31,15 @@ import hmac
 app = Flask(__name__)
 
 # Configuración de la aplicación
-app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "tu_clave_secreta_aqui")
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "").strip()
+if not app.config['SECRET_KEY']:
+    raise RuntimeError("SECRET_KEY debe configurarse antes de iniciar Flask")
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', 'true').lower() == 'true'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=8)
+app.config['NAVEW_FRONTEND_ORIGIN'] = os.getenv('NAVEW_FRONTEND_ORIGIN', '').strip().rstrip('/')
+app.config['MAX_CONTENT_LENGTH'] = 4096
 
 # Configuración de la base de datos MySQL
 app.config['MYSQL_HOST'] = os.getenv("DB_HOST") or os.getenv("MYSQL_HOST", "maestro1")
@@ -39,6 +50,88 @@ app.config['MYSQL_PORT'] = int(os.getenv("DB_PORT") or os.getenv("MYSQL_PORT", 3
 
 # Inicializar la base de datos
 mysql = MySQL(app)
+
+
+def rol_normalizado(rol):
+    return ''.join(str(rol or '').strip().lower().split())
+
+
+@app.before_request
+def proteger_panel_recursos_humanos():
+    # El directorio telefónico y las pantallas de autenticación siguen siendo públicas.
+    publicas = {
+        'static', 'index', 'login', 'register', 'logout',
+        'vextensiones', 'vcelulares', 'vcorreos', 'sso_consume'
+    }
+    if request.endpoint in publicas:
+        return None
+
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    if rol_normalizado(session.get('user_role')) not in {'talentohumano', 'administrador'}:
+        abort(403)
+
+
+@app.route('/sso/consume', methods=['POST'])
+def sso_consume():
+    """Canjea el código de NAVEW y establece una sesión local para Talento Humano."""
+    origen = request.headers.get('Origin', '').rstrip('/')
+    origen_permitido = app.config['NAVEW_FRONTEND_ORIGIN']
+    if not origen_permitido or origen != origen_permitido:
+        abort(403)
+
+    codigo = request.form.get('code', '')
+    if not re.fullmatch(r'[A-Za-z0-9_-]{43}', codigo):
+        abort(400)
+
+    hash_codigo = hashlib.sha256(codigo.encode('ascii')).hexdigest()
+    cursor = mysql.connection.cursor()
+    usuario = None
+    codigo_valido = False
+    try:
+        mysql.connection.begin()
+        cursor.execute(
+            """UPDATE rrhh_sso_codes
+               SET consumed_at = UTC_TIMESTAMP()
+               WHERE code_hash = %s
+                 AND consumed_at IS NULL
+                 AND expires_at > UTC_TIMESTAMP()""",
+            (hash_codigo,)
+        )
+        codigo_valido = cursor.rowcount == 1
+        if codigo_valido:
+            # Recuperar la cuenta vigente dentro de la misma transacción.
+            cursor.execute(
+                """SELECT u.id, u.email, u.rol, u.estado
+                   FROM rrhh_sso_codes s
+                   INNER JOIN usuarios u ON u.id = s.user_id
+                   WHERE s.code_hash = %s
+                   LIMIT 1""",
+                (hash_codigo,)
+            )
+            usuario = cursor.fetchone()
+        mysql.connection.commit()
+    except Exception:
+        mysql.connection.rollback()
+        app.logger.error('Falló el canje SSO de Talento Humano')
+        abort(503)
+    finally:
+        cursor.close()
+
+    if not codigo_valido:
+        abort(401)
+    if not usuario or str(usuario[3] or '').strip().lower() != 'activo':
+        abort(403)
+    if rol_normalizado(usuario[2]) != 'talentohumano':
+        abort(403)
+
+    session.clear()
+    session['user_id'] = usuario[0]
+    session['username'] = usuario[1]
+    session['user_role'] = usuario[2]
+    session.permanent = True
+    return redirect(url_for('menu'))
 
 def wait_for_db():
     """Esperar a que la base de datos esté disponible"""
@@ -1505,4 +1598,4 @@ if __name__ == "__main__":
     print("🚀 Iniciando servidor Flask...")
     wait_for_db()
     print("✅ Servidor listo para recibir conexiones")
-    app.run(host='0.0.0.0', debug=True)
+    app.run(host='0.0.0.0', debug=os.getenv('FLASK_DEBUG', 'false').lower() == 'true')

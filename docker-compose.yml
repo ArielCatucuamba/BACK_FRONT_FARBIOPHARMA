@@ -1,7 +1,5 @@
-version: '3'
 services:
   servidor:
-    container_name: Servidor
     build:
       context: ./servidor3
       dockerfile: Dockerfile
@@ -13,6 +11,9 @@ services:
       DB_USER: ${DB_USER:?Define DB_USER en el archivo .env}
       DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en el archivo .env}
       DB_NAME: ${DB_NAME:?Define DB_NAME en el archivo .env}
+      SECRET_KEY: ${SECRET_KEY:?Define SECRET_KEY en el archivo .env}
+      NAVEW_FRONTEND_ORIGIN: ${NAVEW_FRONTEND_ORIGIN:?Define NAVEW_FRONTEND_ORIGIN en el archivo .env}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
 
   phpmyadmin:
     image: phpmyadmin:latest
