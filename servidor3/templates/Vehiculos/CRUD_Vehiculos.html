@@ -80,7 +80,7 @@
 									data-marca="{{ vehiculo[2]|e }}" data-modelo="{{ vehiculo[3]|e }}"
 									data-color="{{ vehiculo[4]|e }}" data-conductor="{{ (vehiculo[5] or '')|e }}"
 									onclick="prepararEdicion(this)"><i class="bi bi-pencil"></i></button>
-								<form method="POST" action="{{ url_for('eliminar_vehiculo', id=vehiculo[0]) }}" class="d-inline formulario-eliminar">
+								<form method="POST" action="{{ url_for('eliminar_vehiculo', id=vehiculo[0]) }}" class="d-inline formulario-eliminar js-delete-confirmation" data-delete-entity="el vehículo" data-delete-item="{{ vehiculo[1]|e }}">
 									<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar" aria-label="Eliminar vehículo"><i class="bi bi-trash"></i></button>
 								</form>
 								</div>
@@ -179,6 +179,7 @@
 		});
 	</script>
 	<script src="{{ url_for('static', filename='js/crud-search.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/delete-confirmation.js') }}"></script>
 </body>
 
 </html>

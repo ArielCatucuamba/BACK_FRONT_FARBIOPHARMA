@@ -88,7 +88,7 @@ def index():
         LEFT JOIN Colaboradores c ON e.ID_COLABORADOR = c.ID_COLABORADOR
         LEFT JOIN Areas a ON e.AREA = a.ID_AREAS
         LEFT JOIN Departamentos d ON e.DEPARTAMENTO = d.ID_DEPARTAMENTOS
-        ORDER BY c.NOMBRE
+        ORDER BY e.ID_EXTENSIONES ASC
     """)
     extensiones = cur.fetchall()
     cur.close()
@@ -242,7 +242,7 @@ def vextensiones():
         LEFT JOIN Colaboradores col ON e.ID_COLABORADOR = col.ID_COLABORADOR
         LEFT JOIN Areas a ON e.AREA = a.ID_AREAS
         LEFT JOIN Departamentos d ON e.DEPARTAMENTO = d.ID_DEPARTAMENTOS
-        ORDER BY col.NOMBRE
+        ORDER BY e.ID_EXTENSIONES ASC
     """)
     extensiones = cur.fetchall()
     cur.close()
@@ -259,7 +259,7 @@ def vcelulares():
         LEFT JOIN Cargos cg ON col.CARGO = cg.ID_CARGOS
         LEFT JOIN Areas a ON cg.AREA = a.ID_AREAS
         LEFT JOIN Departamentos d ON cg.DEPARTAMENTO = d.ID_DEPARTAMENTOS
-        ORDER BY col.NOMBRE
+        ORDER BY c.ID_CELULARES ASC
     """)
     celulares = cur.fetchall()
     cur.close()
@@ -275,7 +275,7 @@ def vcorreos():
         LEFT JOIN Cargos cg ON col.CARGO = cg.ID_CARGOS
         LEFT JOIN Areas a ON cg.AREA = a.ID_AREAS
         LEFT JOIN Departamentos d ON cg.DEPARTAMENTO = d.ID_DEPARTAMENTOS
-        ORDER BY col.NOMBRE
+        ORDER BY c.ID_CORREOS ASC
     """)
     correos = cur.fetchall()
     cur.close()
@@ -306,7 +306,7 @@ def crud_areas():
         else:
             flash('El campo área es obligatorio.', 'danger')
     # Leer
-    cur.execute("SELECT ID_AREAS, AREA FROM Areas ORDER BY AREA")
+    cur.execute("SELECT ID_AREAS, AREA FROM Areas ORDER BY ID_AREAS ASC")
     areas = cur.fetchall()
     cur.close()
     return render_template('Areas/CRUD_Areas.html', areas=areas)
@@ -366,7 +366,7 @@ def departamentos():
         else:
             flash('El campo departamento es obligatorio.', 'danger')
     # Leer
-    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM Departamentos ORDER BY DEPARTAMENTO")
+    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM Departamentos ORDER BY ID_DEPARTAMENTOS ASC")
     departamentos = cur.fetchall()
     cur.close()
     return render_template('Departamentos/CRUD_Departamentos.html', departamentos=departamentos)
@@ -421,7 +421,7 @@ def ubicaciones():
             cur.execute("INSERT INTO Ubicaciones (DESCRIPCION, GEOLOCALIZACION, DIRECCION) VALUES (%s, %s, %s)", (descripcion, geolocalizacion, direccion))
             mysql.connection.commit()
     # Leer
-    cur.execute("SELECT ID_UBICACIONES, DESCRIPCION, GEOLOCALIZACION, DIRECCION FROM Ubicaciones ORDER BY DESCRIPCION")
+    cur.execute("SELECT ID_UBICACIONES, DESCRIPCION, GEOLOCALIZACION, DIRECCION FROM Ubicaciones ORDER BY ID_UBICACIONES ASC")
     ubicaciones = cur.fetchall()
     cur.close()
     return render_template('Ubicaciones/CRUD_Ubicaciones.html', ubicaciones=ubicaciones)
@@ -463,9 +463,9 @@ def crud_cargos():
         return redirect(url_for('login'))
     cur = mysql.connection.cursor()
     # Obtener áreas y departamentos para los selects
-    cur.execute("SELECT ID_AREAS, AREA FROM Areas ORDER BY AREA")
+    cur.execute("SELECT ID_AREAS, AREA FROM Areas ORDER BY ID_AREAS ASC")
     areas = cur.fetchall()
-    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM Departamentos ORDER BY DEPARTAMENTO")
+    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM Departamentos ORDER BY ID_DEPARTAMENTOS ASC")
     departamentos = cur.fetchall()
     # Crear
     if request.method == 'POST':
@@ -486,7 +486,7 @@ def crud_cargos():
         FROM Cargos c
         LEFT JOIN Areas a ON c.AREA = a.ID_AREAS
         LEFT JOIN Departamentos d ON c.DEPARTAMENTO = d.ID_DEPARTAMENTOS
-        ORDER BY c.DESCRIPCION
+        ORDER BY c.ID_CARGOS ASC
     """)
     cargos = cur.fetchall()
     cur.close()
@@ -707,13 +707,13 @@ def crud_jerarquia():
                         mysql.connection.rollback()
                         flash('No se pudo guardar. Verifica que los cargos, el área y el departamento existan y que no esté duplicada la relación.', 'danger')
 
-    cur.execute("SELECT ID_CARGOS, DESCRIPCION FROM Cargos ORDER BY DESCRIPCION")
+    cur.execute("SELECT ID_CARGOS, DESCRIPCION FROM Cargos ORDER BY ID_CARGOS ASC")
     cargos = cur.fetchall()
-    cur.execute("SELECT ID_AREAS, AREA FROM Areas ORDER BY AREA")
+    cur.execute("SELECT ID_AREAS, AREA FROM Areas ORDER BY ID_AREAS ASC")
     areas = cur.fetchall()
-    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM Departamentos ORDER BY DEPARTAMENTO")
+    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM Departamentos ORDER BY ID_DEPARTAMENTOS ASC")
     departamentos = cur.fetchall()
-    cur.execute("SELECT ID_UBICACIONES, DESCRIPCION FROM Ubicaciones ORDER BY DESCRIPCION")
+    cur.execute("SELECT ID_UBICACIONES, DESCRIPCION FROM Ubicaciones ORDER BY ID_UBICACIONES ASC")
     plantas = cur.fetchall()
     cur.execute("""
         SELECT j.ID_JERARQUIA, j.CARGO, c.DESCRIPCION,
@@ -725,7 +725,7 @@ def crud_jerarquia():
         LEFT JOIN Cargos s ON j.SUPERIOR_JERARQUICO = s.ID_CARGOS
         INNER JOIN Departamentos d ON j.DEPARTAMENTO = d.ID_DEPARTAMENTOS
         INNER JOIN Areas a ON j.AREA = a.ID_AREAS
-        ORDER BY j.PLANTA, d.DEPARTAMENTO, a.AREA, c.DESCRIPCION
+        ORDER BY j.ID_JERARQUIA ASC
     """)
     jerarquias = cur.fetchall()
     cur.close()
@@ -816,17 +816,17 @@ def crud_colaboradores():
         return redirect(url_for('login'))
     cur = mysql.connection.cursor()
     # Obtener áreas, departamentos, cargos y ubicaciones para los selects
-    cur.execute("SELECT ID_AREAS, AREA FROM Areas ORDER BY AREA")
+    cur.execute("SELECT ID_AREAS, AREA FROM Areas ORDER BY ID_AREAS ASC")
     areas = cur.fetchall()
-    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM Departamentos ORDER BY DEPARTAMENTO")
+    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM Departamentos ORDER BY ID_DEPARTAMENTOS ASC")
     departamentos = cur.fetchall()
-    cur.execute("SELECT ID_CARGOS, DESCRIPCION, AREA, DEPARTAMENTO FROM Cargos ORDER BY DESCRIPCION")
+    cur.execute("SELECT ID_CARGOS, DESCRIPCION, AREA, DEPARTAMENTO FROM Cargos ORDER BY ID_CARGOS ASC")
     cargos = cur.fetchall()
     # Para JS: lista de objetos {id, nombre, area, departamento}
     cargos_info = [
         {"id": c[0], "nombre": c[1], "area": c[2], "departamento": c[3]} for c in cargos
     ]
-    cur.execute("SELECT ID_UBICACIONES, DESCRIPCION FROM Ubicaciones ORDER BY DESCRIPCION")
+    cur.execute("SELECT ID_UBICACIONES, DESCRIPCION FROM Ubicaciones ORDER BY ID_UBICACIONES ASC")
     ubicaciones = cur.fetchall()
     # Crear
     if request.method == 'POST':
@@ -871,21 +871,20 @@ def crud_colaboradores():
     cur.execute("""
         SELECT col.ID_COLABORADOR, col.NOMBRE,
                d.DEPARTAMENTO, a.AREA, c.DESCRIPCION, u.DESCRIPCION,
-               c.DEPARTAMENTO, c.AREA, col.CARGO, col.UBICACION, col.ESTADO
+               c.DEPARTAMENTO, c.AREA, col.CARGO, col.UBICACION, col.ESTADO,
+               col.CEDULA, empresa.NOMBRE, correo.CORREO
         FROM Colaboradores col
         LEFT JOIN Cargos c ON col.CARGO = c.ID_CARGOS
         LEFT JOIN Areas a ON c.AREA = a.ID_AREAS
         LEFT JOIN Departamentos d ON c.DEPARTAMENTO = d.ID_DEPARTAMENTOS
         LEFT JOIN Ubicaciones u ON col.UBICACION = u.ID_UBICACIONES
-        ORDER BY col.NOMBRE
+         LEFT JOIN Empresas empresa ON col.EMPRESA = empresa.ID_EMPRESA
+         LEFT JOIN Correos correo ON col.ID_CORREO_PRINCIPAL = correo.ID_CORREOS
+        ORDER BY col.ID_COLABORADOR ASC
     """)
     colaboradores = cur.fetchall()
-    aprobadores_colaboradores = {
-        colaborador[0]: resolver_aprobador_efectivo(cur, colaborador[0])
-        for colaborador in colaboradores
-    }
     cur.close()
-    return render_template('Colaboradores/CRUD_Colaboradores.html', colaboradores=colaboradores, areas=areas, departamentos=departamentos, cargos=cargos, ubicaciones=ubicaciones, cargos_info=cargos_info, aprobadores_colaboradores=aprobadores_colaboradores)
+    return render_template('Colaboradores/CRUD_Colaboradores.html', colaboradores=colaboradores, areas=areas, departamentos=departamentos, cargos=cargos, ubicaciones=ubicaciones, cargos_info=cargos_info)
 
 # Editar colaborador
 @app.route('/crud_colaboradores/editar/<int:id>', methods=['POST'])
@@ -984,9 +983,9 @@ def crud_extensiones():
         return redirect(url_for('login'))
     cur = mysql.connection.cursor()
     # Obtener áreas y departamentos para los selects
-    cur.execute("SELECT ID_AREAS, AREA FROM Areas ORDER BY AREA")
+    cur.execute("SELECT ID_AREAS, AREA FROM Areas ORDER BY ID_AREAS ASC")
     areas = cur.fetchall()
-    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM Departamentos ORDER BY DEPARTAMENTO")
+    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM Departamentos ORDER BY ID_DEPARTAMENTOS ASC")
     departamentos = cur.fetchall()
     # Obtener colaboradores para el autocompletado y su info de área y departamento
     cur.execute("""
@@ -995,7 +994,7 @@ def crud_extensiones():
         LEFT JOIN Cargos cg ON c.CARGO = cg.ID_CARGOS
         LEFT JOIN Areas a ON cg.AREA = a.ID_AREAS
         LEFT JOIN Departamentos d ON cg.DEPARTAMENTO = d.ID_DEPARTAMENTOS
-        ORDER BY c.NOMBRE
+        ORDER BY c.ID_COLABORADOR ASC
     """)
     colaboradores_info = []
     colaboradores = []
@@ -1062,7 +1061,7 @@ def crud_extensiones():
         LEFT JOIN Colaboradores c ON e.ID_COLABORADOR = c.ID_COLABORADOR
         LEFT JOIN Areas a ON e.AREA = a.ID_AREAS
         LEFT JOIN Departamentos d ON e.DEPARTAMENTO = d.ID_DEPARTAMENTOS
-        ORDER BY c.NOMBRE
+        ORDER BY e.ID_EXTENSIONES ASC
     """)
     extensiones = cur.fetchall()
     cur.close()
@@ -1145,9 +1144,9 @@ def crud_celulares():
         return redirect(url_for('login'))
     cur = mysql.connection.cursor()
     # Obtener áreas y departamentos para los selects
-    cur.execute("SELECT ID_AREAS, AREA FROM Areas ORDER BY AREA")
+    cur.execute("SELECT ID_AREAS, AREA FROM Areas ORDER BY ID_AREAS ASC")
     areas = cur.fetchall()
-    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM Departamentos ORDER BY DEPARTAMENTO")
+    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM Departamentos ORDER BY ID_DEPARTAMENTOS ASC")
     departamentos = cur.fetchall()
     # Obtener colaboradores para el autocompletado y su info de área y departamento
     cur.execute("""
@@ -1156,7 +1155,7 @@ def crud_celulares():
         LEFT JOIN Cargos cg ON c.CARGO = cg.ID_CARGOS
         LEFT JOIN Areas a ON cg.AREA = a.ID_AREAS
         LEFT JOIN Departamentos d ON cg.DEPARTAMENTO = d.ID_DEPARTAMENTOS
-        ORDER BY c.NOMBRE
+        ORDER BY c.ID_COLABORADOR ASC
     """)
     colaboradores_info = []
     colaboradores = []
@@ -1193,7 +1192,7 @@ def crud_celulares():
         LEFT JOIN Cargos cg ON col.CARGO = cg.ID_CARGOS
         LEFT JOIN Areas a ON cg.AREA = a.ID_AREAS
         LEFT JOIN Departamentos d ON cg.DEPARTAMENTO = d.ID_DEPARTAMENTOS
-        ORDER BY col.NOMBRE
+        ORDER BY c.ID_CELULARES ASC
     """)
     celulares = cur.fetchall()
     cur.close()
@@ -1233,9 +1232,9 @@ def crud_correos():
         return redirect(url_for('login'))
     cur = mysql.connection.cursor()
     # Obtener áreas y departamentos para los selects
-    cur.execute("SELECT ID_AREAS, AREA FROM Areas ORDER BY AREA")
+    cur.execute("SELECT ID_AREAS, AREA FROM Areas ORDER BY ID_AREAS ASC")
     areas = cur.fetchall()
-    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM Departamentos ORDER BY DEPARTAMENTO")
+    cur.execute("SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM Departamentos ORDER BY ID_DEPARTAMENTOS ASC")
     departamentos = cur.fetchall()
     # Obtener colaboradores para el autocompletado y su info de área y departamento
     cur.execute("""
@@ -1244,7 +1243,7 @@ def crud_correos():
         LEFT JOIN Cargos cg ON c.CARGO = cg.ID_CARGOS
         LEFT JOIN Areas a ON cg.AREA = a.ID_AREAS
         LEFT JOIN Departamentos d ON cg.DEPARTAMENTO = d.ID_DEPARTAMENTOS
-        ORDER BY c.NOMBRE
+        ORDER BY c.ID_COLABORADOR ASC
     """)
     colaboradores_info = []
     colaboradores = []
@@ -1291,7 +1290,7 @@ def crud_correos():
         LEFT JOIN Cargos cg ON col.CARGO = cg.ID_CARGOS
         LEFT JOIN Areas a ON cg.AREA = a.ID_AREAS
         LEFT JOIN Departamentos d ON cg.DEPARTAMENTO = d.ID_DEPARTAMENTOS
-        ORDER BY col.NOMBRE
+        ORDER BY c.ID_CORREOS ASC
     """)
     correos = cur.fetchall()
     cur.close()
@@ -1341,6 +1340,73 @@ def eliminar_correo(id):
     return redirect(url_for('crud_correos'))
 
 
+# --------------------------------------CRUD de empresas----------------------------------------------------------------------
+@app.route('/empresas', methods=['GET', 'POST'])
+def crud_empresas():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    cur = mysql.connection.cursor()
+    if request.method == 'POST':
+        nombre = (request.form.get('nombre') or '').strip()
+        if not nombre:
+            flash('El nombre de la empresa es obligatorio.', 'danger')
+        else:
+            try:
+                cur.execute("INSERT INTO Empresas (NOMBRE) VALUES (%s)", (nombre,))
+                mysql.connection.commit()
+                flash('Empresa agregada correctamente.', 'success')
+            except Exception:
+                mysql.connection.rollback()
+                flash('No se pudo agregar la empresa. Verifica que el nombre no esté duplicado.', 'danger')
+
+    cur.execute("SELECT ID_EMPRESA, NOMBRE FROM Empresas ORDER BY ID_EMPRESA ASC")
+    empresas = cur.fetchall()
+    cur.close()
+    return render_template('Empresas/CRUD_Empresas.html', empresas=empresas)
+
+
+@app.route('/empresas/editar/<int:id>', methods=['POST'])
+def editar_empresa(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    nombre = (request.form.get('nombre') or '').strip()
+    if not nombre:
+        flash('El nombre de la empresa es obligatorio.', 'danger')
+        return redirect(url_for('crud_empresas'))
+
+    cur = mysql.connection.cursor()
+    try:
+        cur.execute("UPDATE Empresas SET NOMBRE = %s WHERE ID_EMPRESA = %s", (nombre, id))
+        mysql.connection.commit()
+        flash('Empresa actualizada correctamente.', 'success')
+    except Exception:
+        mysql.connection.rollback()
+        flash('No se pudo actualizar la empresa. Verifica que el nombre no esté duplicado.', 'danger')
+    finally:
+        cur.close()
+    return redirect(url_for('crud_empresas'))
+
+
+@app.route('/empresas/eliminar/<int:id>', methods=['POST'])
+def eliminar_empresa(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    cur = mysql.connection.cursor()
+    try:
+        cur.execute("DELETE FROM Empresas WHERE ID_EMPRESA = %s", (id,))
+        mysql.connection.commit()
+        flash('Empresa eliminada correctamente.', 'success')
+    except Exception:
+        mysql.connection.rollback()
+        flash('No se puede eliminar esta empresa porque está relacionada con otros datos.', 'danger')
+    finally:
+        cur.close()
+    return redirect(url_for('crud_empresas'))
+
+
 # --------------------------------------CRUD de vehículos----------------------------------------------------------------------
 @app.route('/vehiculos', methods=['GET', 'POST'])
 def crud_vehiculos():
@@ -1376,7 +1442,7 @@ def crud_vehiculos():
     cur.execute("""
         SELECT ID_VEHICULOS, PLACA, MARCA, MODELO, COLOR, CONDUCTOR_ASIGNADO
         FROM Vehiculos
-        ORDER BY PLACA
+        ORDER BY ID_VEHICULOS ASC
     """)
     vehiculos = cur.fetchall()
     cur.close()

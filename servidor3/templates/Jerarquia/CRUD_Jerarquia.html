@@ -80,7 +80,7 @@
 									data-superior="{{ jerarquia[3] or '' }}" data-departamento="{{ jerarquia[5] }}"
 									data-area="{{ jerarquia[7] }}" data-planta="{{ jerarquia[9]|e }}"
 										onclick="prepararEdicion(this)"><i class="bi bi-pencil"></i></button>
-								<form method="POST" action="{{ url_for('eliminar_jerarquia', id=jerarquia[0]) }}" class="d-inline formulario-eliminar">
+								<form method="POST" action="{{ url_for('eliminar_jerarquia', id=jerarquia[0]) }}" class="d-inline formulario-eliminar js-delete-confirmation" data-delete-entity="la relación jerárquica" data-delete-item="{{ jerarquia[2]|e }} en {{ jerarquia[9]|e }}">
 									<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar" aria-label="Eliminar relación jerárquica"><i class="bi bi-trash"></i></button>
 								</form>
 								</div>
@@ -254,6 +254,7 @@
 		});
 	</script>
 	<script src="{{ url_for('static', filename='js/crud-search.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/delete-confirmation.js') }}"></script>
 </body>
 
 </html>

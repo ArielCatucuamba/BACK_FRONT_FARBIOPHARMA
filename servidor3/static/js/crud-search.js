@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
         tablaDepartamentos: { placeholder: 'Buscar por departamento…', selectors: ['.departamento-nombre'] },
         tablaCargos: { placeholder: 'Buscar por área o cargo…', selectors: ['.cargo-area', '.cargo-descripcion'] },
         tablaUbicaciones: { placeholder: 'Buscar por ubicación…', selectors: ['.ubicacion-descripcion'] },
-        tablaColaboradores: { placeholder: 'Buscar por nombre, cargo o ubicación…', selectors: ['.col-nombre', '.col-cargo', '.col-ubicacion'], areaSelector: '.col-area', departmentSelector: '.col-departamento' },
+        tablaColaboradores: { placeholder: 'Buscar por cédula, nombre o cargo…', selectors: ['.col-cedula', '.col-nombre', '.col-cargo'], areaSelector: '.col-area', departmentSelector: '.col-departamento' },
         tablaExtensiones: { placeholder: 'Buscar por nombre o extensión…', selectors: ['.ext-nombre', '.ext-extension'], areaSelector: '.ext-area', departmentSelector: '.ext-departamento' },
         tablaCelulares: { placeholder: 'Buscar por nombre o celular…', selectors: ['.cel-nombre', '.cel-celular'], areaSelector: '.cel-area', departmentSelector: '.cel-departamento' },
         tablaCorreos: { placeholder: 'Buscar por nombre o correo…', selectors: ['.cor-nombre', '.cor-correo'], areaSelector: '.cor-area', departmentSelector: '.cor-departamento' },

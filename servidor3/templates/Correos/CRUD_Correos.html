@@ -351,7 +351,7 @@
 							onclick="llenarFormularioEditarDesdeBoton(this)">
 							<i class="bi bi-pencil"></i>
 						</button>
-						<form method="POST" action="{{ url_for('eliminar_correo', id=cor[0]) }}" class="d-inline confirm-delete-correo">
+						<form method="POST" action="{{ url_for('eliminar_correo', id=cor[0]) }}" class="d-inline confirm-delete-correo js-delete-confirmation" data-delete-entity="el correo" data-delete-item="{{ cor[2]|e }}">
 							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i class="bi bi-trash"></i></button>
 						</form>
 						</div>
@@ -710,6 +710,7 @@
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 	<script src="{{ url_for('static', filename='js/crud-search.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/delete-confirmation.js') }}"></script>
 </body>
 
 </html>

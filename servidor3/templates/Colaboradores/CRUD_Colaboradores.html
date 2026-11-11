@@ -11,73 +11,6 @@
 		window.cargos_info = JSON.parse(document.getElementById('cargosInfoData').textContent);
 	</script>
 	<style>
-		.table-fixed {
-			table-layout: fixed;
-			width: 100%;
-		}
-
-		.table-fixed th,
-		.table-fixed td {
-			overflow: hidden;
-			word-break: break-word;
-		}
-
-		.table-fixed th:nth-child(1),
-		.table-fixed td:nth-child(1) {
-			min-width: 50px;
-			width: 50px;
-		}
-
-		.table-fixed th:nth-child(2),
-		.table-fixed td:nth-child(2) {
-			min-width: 220px;
-			width: 220px;
-		}
-
-		.table-fixed th:nth-child(3),
-		.table-fixed td:nth-child(3) {
-			min-width: 200px;
-			width: 200px;
-		}
-
-		.table-fixed th:nth-child(4),
-		.table-fixed td:nth-child(4) {
-			min-width: 150px;
-			width: 150px;
-		}
-
-		/* Columnas principales: Cargo y Ubicación */
-		.table-fixed th:nth-child(5),
-		.table-fixed td:nth-child(5) {
-			min-width: 180px;
-			width: 180px;
-		}
-
-		.table-fixed th:nth-child(6),
-		.table-fixed td:nth-child(6) {
-			min-width: 140px;
-			width: 140px;
-		}
-
-		.table-fixed th:nth-child(7),
-		.table-fixed td:nth-child(7) {
-			min-width: 100px;
-			width: 100px;
-		}
-
-		.table-fixed th:nth-child(8),
-		.table-fixed td:nth-child(8) {
-			min-width: 200px;
-			width: 200px;
-		}
-
-		.table-fixed th:nth-child(9),
-		.table-fixed td:nth-child(9) {
-			min-width: 90px;
-			width: 90px;
-		}
-	</style>
-	<style>
 		.table thead th {
 			background: #0d3b4e;
 			color: #fff;
@@ -447,13 +380,12 @@ function cerrarAlertaExito() {
 			<thead>
 				<tr>
 					<th>ID</th>
+					<th>Cédula</th>
 					<th>Nombre</th>
+					<th>Cargo</th>
 					<th>Área</th>
 					<th>Departamento</th>
-					<th>Cargo</th>
-					<th>Ubicación</th>
 					<th>Estado</th>
-					<th>Aprobador efectivo</th>
 					<th>Acciones</th>
 				</tr>
 			</thead>
@@ -461,23 +393,25 @@ function cerrarAlertaExito() {
 				{% for col in colaboradores %}
 				<tr>
 					<td>{{ col[0] }}</td>
+					<td class="col-cedula">{{ col[11] or '—' }}</td>
 					<td class="col-nombre">{{ col[1] }}</td>
+					<td class="col-cargo" data-cargo-id="{{ col[8] }}">{{ col[4] }}</td>
 					<td class="col-area" data-area-id="{{ col[7] }}">{{ col[3] }}</td>
 					<td class="col-departamento" data-dep-id="{{ col[6] }}">{{ col[2] }}</td>
-					<td class="col-cargo" data-cargo-id="{{ col[8] }}">{{ col[4] }}</td>
-					<td class="col-ubicacion" data-ubicacion-id="{{ col[9] }}">{{ col[5] }}</td>
 					<td class="col-estado">
 						<span class="badge bg-{{ 'success' if col[10] == 'ACTIVO' else 'secondary' }}">{{ 'Activo' if col[10] == 'ACTIVO' else 'Ausente' }}</span>
 					</td>
-					<td class="col-aprobador">
-						{% set resolucion = aprobadores_colaboradores.get(col[0]) %}
-						{% if resolucion and resolucion.aprobadores %}
-							{% if resolucion.heredado %}<span class="badge bg-warning text-dark me-1">Heredado</span>{% endif %}
-							{{ resolucion.aprobadores | map(attribute='nombre') | join(', ') }}
-						{% else %}<span class="text-muted" title="{{ resolucion.error if resolucion else '' }}">No disponible</span>{% endif %}
-					</td>
 					<td>
 						<div class="action-buttons">
+						<button type="button" class="btn btn-sm btn-info btn-action" title="Ver detalle" aria-label="Ver detalle del colaborador"
+							data-bs-toggle="modal" data-bs-target="#modalDetalleColaborador"
+							data-id="{{ col[0] }}" data-cedula="{{ (col[11] or '')|e }}"
+							data-nombre="{{ (col[1] or '')|e }}" data-empresa="{{ (col[12] or '')|e }}"
+							data-cargo="{{ (col[4] or '')|e }}" data-area="{{ (col[3] or '')|e }}"
+							data-departamento="{{ (col[2] or '')|e }}" data-ubicacion="{{ (col[5] or '')|e }}"
+							data-estado="{{ (col[10] or '')|e }}" data-correo="{{ (col[13] or '')|e }}">
+							<i class="bi bi-eye-fill" aria-hidden="true"></i>
+						</button>
 						<button type="button" class="btn btn-sm btn-primary btn-action" title="Editar"
 							data-bs-toggle="modal" data-bs-target="#modalEditar"
 							data-id="{{ col[0] }}"
@@ -490,7 +424,7 @@ function cerrarAlertaExito() {
 							onclick="llenarFormularioEditarDesdeBoton(this)">
 							<i class="bi bi-pencil"></i>
 						</button>
-						<form method="POST" action="{{ url_for('eliminar_colaborador', id=col[0]) }}" class="d-inline confirm-delete-colaborador">
+						<form method="POST" action="{{ url_for('eliminar_colaborador', id=col[0]) }}" class="d-inline confirm-delete-colaborador js-delete-confirmation" data-delete-entity="el colaborador" data-delete-item="{{ col[1]|e }}">
 							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i class="bi bi-trash"></i></button>
 						</form>
 						</div>
@@ -498,12 +432,13 @@ function cerrarAlertaExito() {
 				</tr>
 				{% endfor %}
 				{% if not colaboradores %}
-				<tr><td colspan="9" class="empty-state text-center py-5 text-muted"><i class="bi bi-people d-block fs-2 mb-2" aria-hidden="true"></i>No hay colaboradores registrados.</td></tr>
+				<tr><td colspan="8" class="empty-state text-center py-5 text-muted"><i class="bi bi-people d-block fs-2 mb-2" aria-hidden="true"></i>No hay colaboradores registrados.</td></tr>
 				{% endif %}
 			</tbody>
 		</table>
 		</div>
 		</section>
+		{% include 'Colaboradores/Detalle_Colaborador.html' %}
 		</main>
 	<script>
 		function llenarFormularioEditarDesdeBoton(btn) {
@@ -642,6 +577,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 	<script src="{{ url_for('static', filename='js/crud-search.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/delete-confirmation.js') }}"></script>
 </body>
 
 </html>
