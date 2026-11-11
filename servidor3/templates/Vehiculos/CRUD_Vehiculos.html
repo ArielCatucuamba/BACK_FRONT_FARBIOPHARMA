@@ -1,3 +1,4 @@
+{% from 'partials/csrf_field.html' import csrf_field %}
 <!DOCTYPE html>
 <html lang="es">
 
@@ -73,7 +74,8 @@
 									data-marca="{{ vehiculo[2]|e }}" data-modelo="{{ vehiculo[3]|e }}"
 									data-color="{{ vehiculo[4]|e }}" data-conductor="{{ (vehiculo[5] or '')|e }}"
 									onclick="prepararEdicion(this)"><i class="bi bi-pencil"></i></button>
-								<form method="POST" action="{{ url_for('eliminar_vehiculo', id=vehiculo[0]) }}" class="d-inline formulario-eliminar js-delete-confirmation" data-delete-entity="el vehículo" data-delete-item="{{ vehiculo[1]|e }}">
+								<form method="POST" action="{{ url_for('fleet.eliminar_vehiculo', id=vehiculo[0]) }}" class="d-inline formulario-eliminar js-delete-confirmation" data-delete-entity="el vehículo" data-delete-item="{{ vehiculo[1]|e }}">
+{{ csrf_field(csrf_token_value) }}
 									<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar" aria-label="Eliminar vehículo"><i class="bi bi-trash"></i></button>
 								</form>
 								</div>
@@ -84,6 +86,7 @@
 						{% endfor %}
 					</tbody>
 				</table>
+                    {% include 'partials/server_pagination.html' %}
 			</div>
 			<div id="sinResultados" class="text-center text-muted py-4 d-none">No se encontraron vehículos con ese criterio.</div>
 		</section>
@@ -92,7 +95,8 @@
 	<div class="modal fade" id="modalAgregar" tabindex="-1" aria-labelledby="modalAgregarLabel" aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content">
-				<form method="POST" action="{{ url_for('crud_vehiculos') }}">
+				<form method="POST" action="{{ url_for('fleet.crud_vehiculos') }}">
+{{ csrf_field(csrf_token_value) }}
 					<div class="modal-header">
 						<h2 class="modal-title fs-5" id="modalAgregarLabel">Agregar vehículo</h2>
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
@@ -118,6 +122,7 @@
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content">
 				<form id="formEditar" method="POST">
+{{ csrf_field(csrf_token_value) }}
 					<div class="modal-header">
 						<h2 class="modal-title fs-5" id="modalEditarLabel">Editar vehículo</h2>
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>

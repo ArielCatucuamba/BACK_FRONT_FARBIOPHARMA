@@ -1,3 +1,4 @@
+{% from 'partials/csrf_field.html' import csrf_field %}
 <!DOCTYPE html>
 <html lang="es">
 
@@ -73,7 +74,8 @@
 									data-superior="{{ jerarquia[3] or '' }}" data-departamento="{{ jerarquia[5] }}"
 									data-area="{{ jerarquia[7] }}" data-planta="{{ jerarquia[9]|e }}"
 										onclick="prepararEdicion(this)"><i class="bi bi-pencil"></i></button>
-								<form method="POST" action="{{ url_for('eliminar_jerarquia', id=jerarquia[0]) }}" class="d-inline formulario-eliminar js-delete-confirmation" data-delete-entity="la relación jerárquica" data-delete-item="{{ jerarquia[2]|e }} en {{ jerarquia[9]|e }}">
+								<form method="POST" action="{{ url_for('hierarchy.eliminar_jerarquia', id=jerarquia[0]) }}" class="d-inline formulario-eliminar js-delete-confirmation" data-delete-entity="la relación jerárquica" data-delete-item="{{ jerarquia[2]|e }} en {{ jerarquia[9]|e }}">
+{{ csrf_field(csrf_token_value) }}
 									<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar" aria-label="Eliminar relación jerárquica"><i class="bi bi-trash"></i></button>
 								</form>
 								</div>
@@ -84,6 +86,7 @@
 						{% endfor %}
 					</tbody>
 				</table>
+                    {% include 'partials/server_pagination.html' %}
 			</div>
 			<div id="sinResultados" class="text-center text-muted py-4 d-none">No se encontraron relaciones con ese criterio.</div>
 		</section>
@@ -92,7 +95,8 @@
 	<div class="modal fade" id="modalAgregar" tabindex="-1" aria-labelledby="modalAgregarLabel" aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content">
-				<form method="POST" action="{{ url_for('crud_jerarquia') }}">
+				<form method="POST" action="{{ url_for('hierarchy.crud_jerarquia') }}">
+{{ csrf_field(csrf_token_value) }}
 					<div class="modal-header">
 						<h2 class="modal-title fs-5" id="modalAgregarLabel">Agregar relación jerárquica</h2>
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
@@ -148,6 +152,7 @@
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content">
 				<form id="formEditar" method="POST">
+{{ csrf_field(csrf_token_value) }}
 					<div class="modal-header">
 						<h2 class="modal-title fs-5" id="modalEditarLabel">Editar relación jerárquica</h2>
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>

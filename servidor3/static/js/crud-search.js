@@ -183,7 +183,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     refreshAreaOptions();
 
-    const pageSize = 10;
+    const hasServerPagination = Boolean(container.querySelector('.server-pagination'));
+    const pageSize = hasServerPagination ? Math.max(rows.length, 1) : 10;
     let currentPage = 1;
     const paginationFooter = document.createElement('div');
     paginationFooter.className = 'crud-pagination-footer';
@@ -198,7 +199,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     paginationFooter.append(paginationSummary, paginationControls);
     const tableContainer = table.closest('.table-responsive') || table;
-    tableContainer.insertAdjacentElement('afterend', paginationFooter);
+    if (hasServerPagination) {
+        paginationFooter.hidden = true;
+    } else {
+        tableContainer.insertAdjacentElement('afterend', paginationFooter);
+    }
 
     function normalize(text) {
         return text.toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();

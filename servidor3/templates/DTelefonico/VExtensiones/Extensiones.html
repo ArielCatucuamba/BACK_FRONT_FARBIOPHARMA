@@ -20,7 +20,6 @@
                 <li><button class="menu-btn active" onclick="location.href='/vextensiones'" type="button"><i class="bi bi-telephone"></i> Extensiones</button></li>
                 <li><button class="menu-btn" onclick="location.href='/vcelulares'" type="button"><i class="bi bi-phone"></i> Celulares</button></li>
                 <li><button class="menu-btn" onclick="location.href='/vcorreos'" type="button"><i class="bi bi-envelope"></i> Correos </button></li>
-                <li><button class="menu-btn" onclick="location.href='/login'" type="button"><i class="bi bi-person-circle"></i> Iniciar sesión</button></li>
             </ul>
         </nav>
         <main class="directory-content">
@@ -74,6 +73,7 @@
                         </tbody>
                     </table>
                 </div>
+                {% include 'partials/server_pagination.html' %}
                 <footer class="directory-table-footer">
                     <p class="directory-results-count" data-pagination="summary" aria-live="polite"></p>
                     <nav class="directory-pagination" data-pagination="controls" aria-label="Paginación de extensiones"></nav>

@@ -1,3 +1,4 @@
+{% from 'partials/csrf_field.html' import csrf_field %}
 <!DOCTYPE html>
 <html lang="es">
 
@@ -122,6 +123,7 @@
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<form id="formEditar" method="POST">
+{{ csrf_field(csrf_token_value) }}
 						<div class="modal-header">
 							<h5 class="modal-title" id="modalEditarLabel">Editar Cargo</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -164,7 +166,8 @@
 		<div class="modal fade" id="modalAgregar" tabindex="-1" aria-labelledby="modalAgregarLabel" aria-hidden="true">
 			<div class="modal-dialog">
 				<div class="modal-content">
-					<form method="POST" action="{{ url_for('crud_cargos') }}">
+					<form method="POST" action="{{ url_for('structure.crud_cargos') }}">
+{{ csrf_field(csrf_token_value) }}
 						<div class="modal-header">
 							<h5 class="modal-title" id="modalAgregarLabel">Agregar Cargo</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -206,6 +209,7 @@
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<form id="formEditar" method="POST">
+{{ csrf_field(csrf_token_value) }}
 						<div class="modal-header">
 							<h5 class="modal-title" id="modalEditarLabel">Editar Departamento</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -258,7 +262,8 @@
 							onclick="llenarFormularioEditarDesdeBoton(this)">
 							<i class="bi bi-pencil"></i>
 						</button>
-						<form method="POST" action="{{ url_for('eliminar_cargo', id=cargo[0]) }}" class="d-inline confirm-delete-cargo js-delete-confirmation" data-delete-entity="el cargo" data-delete-item="{{ cargo[1]|e }}">
+						<form method="POST" action="{{ url_for('structure.eliminar_cargo', id=cargo[0]) }}" class="d-inline confirm-delete-cargo js-delete-confirmation" data-delete-entity="el cargo" data-delete-item="{{ cargo[1]|e }}">
+{{ csrf_field(csrf_token_value) }}
 							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i
 														class="bi bi-trash"></i></button>
 							</form>
@@ -271,6 +276,7 @@
 				{% endif %}
 			</tbody>
 		</table>
+                    {% include 'partials/server_pagination.html' %}
 		</div>
 		</section>
 		</main>

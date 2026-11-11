@@ -1,3 +1,4 @@
+{% from 'partials/csrf_field.html' import csrf_field %}
 <!DOCTYPE html>
 <html lang="es">
 
@@ -123,9 +124,7 @@
 				<div class="col-4">
 					<input type="text" id="filtroNombre" class="form-control" placeholder="Filtrar por Nombre" autocomplete="off" list="listaNombres">
 					<datalist id="listaNombres">
-						{% for col in colaboradores_info %}
-							<option value="{{ col.nombre }}"></option>
-						{% endfor %}
+						
 					</datalist>
 				</div>
 				<div class="col-auto">
@@ -138,6 +137,7 @@
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<form id="formEditar" method="POST">
+{{ csrf_field(csrf_token_value) }}
 						<div class="modal-header">
 							<h5 class="modal-title" id="modalEditarLabel">Editar Correo</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -148,9 +148,7 @@
 								<label for="editarNombre" class="form-label">Nombre</label>
 								<input list="listaColaboradoresEditar" class="form-control" id="editarNombre" required autocomplete="off">
 								<datalist id="listaColaboradoresEditar">
-									{% for col in colaboradores_info %}
-										<option value="{{ col.nombre }}" data-id="{{ col.id }}">{{ col.nombre }}</option>
-									{% endfor %}
+									
 								</datalist>
 								<input type="hidden" name="id_colaborador" id="editarIdColaborador">
 							</div>
@@ -192,7 +190,8 @@
 		<div class="modal fade" id="modalAgregar" tabindex="-1" aria-labelledby="modalAgregarLabel" aria-hidden="true">
 			<div class="modal-dialog">
 				<div class="modal-content">
-					<form method="POST" action="{{ url_for('crud_correos') }}">
+					<form method="POST" action="{{ url_for('telecom.crud_correos') }}">
+{{ csrf_field(csrf_token_value) }}
 						<div class="modal-header">
 							<h5 class="modal-title" id="modalAgregarLabel">Agregar Correo</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -202,9 +201,7 @@
 								<label for="nuevoNombre" class="form-label">Nombre</label>
 								<input list="listaColaboradoresNuevo" class="form-control" id="nuevoNombre" required autocomplete="off">
 								<datalist id="listaColaboradoresNuevo">
-									{% for col in colaboradores_info %}
-										<option value="{{ col.nombre }}" data-id="{{ col.id }}">{{ col.nombre }}</option>
-									{% endfor %}
+									
 								</datalist>
 								<input type="hidden" name="id_colaborador" id="nuevoIdColaborador">
 								<script>
@@ -286,6 +283,7 @@
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<form id="formEditar" method="POST">
+{{ csrf_field(csrf_token_value) }}
 						<div class="modal-header">
 							<h5 class="modal-title" id="modalEditarLabel">Editar Departamento</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -344,7 +342,8 @@
 							onclick="llenarFormularioEditarDesdeBoton(this)">
 							<i class="bi bi-pencil"></i>
 						</button>
-						<form method="POST" action="{{ url_for('eliminar_correo', id=cor[0]) }}" class="d-inline confirm-delete-correo js-delete-confirmation" data-delete-entity="el correo" data-delete-item="{{ cor[2]|e }}">
+						<form method="POST" action="{{ url_for('telecom.eliminar_correo', id=cor[0]) }}" class="d-inline confirm-delete-correo js-delete-confirmation" data-delete-entity="el correo" data-delete-item="{{ cor[2]|e }}">
+{{ csrf_field(csrf_token_value) }}
 							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i class="bi bi-trash"></i></button>
 						</form>
 						</div>
@@ -356,13 +355,14 @@
 				{% endif %}
 			</tbody>
 		</table>
+                    {% include 'partials/server_pagination.html' %}
 		</div>
 		</section>
 		</main>
-	<script type="application/json" id="correosColaboradoresData">{{ colaboradores_info|tojson }}</script>
+	<script type="application/json" id="correosColaboradoresData">[]</script>
 	<script>
 		// Mapeo de colaboradores a área y departamento (serializado como JSON seguro)
-		const colaboradoresInfo = JSON.parse(document.getElementById('correosColaboradoresData').textContent);
+		window.colaboradoresInfo = window.colaboradoresInfo || []; const colaboradoresInfo = window.colaboradoresInfo;
 
 		// Normaliza cadenas: quita tildes/diacríticos, trim y pasa a minúsculas.
 		function normalizeStr(s) {
@@ -391,8 +391,8 @@
 					var areaNombre = col.area && (col.area.nombre || col.area.AREA) ? (col.area.nombre || col.area.AREA) : (col.area_nombre || col.areaNombre || '');
 					var depId = col.departamento && (col.departamento.id || col.departamento.ID_DEPARTAMENTOS || col.departamento.ID) ? (col.departamento.id || col.departamento.ID_DEPARTAMENTOS || col.departamento.ID) : (col.departamento_id || col.departamentoId || '');
 					var depNombre = col.departamento && (col.departamento.nombre || col.departamento.DEPARTAMENTO) ? (col.departamento.nombre || col.departamento.DEPARTAMENTO) : (col.departamento_nombre || col.departamentoNombre || '');
-					if (areaId && areaSelect) areaSelect.innerHTML += `<option value="${areaId}" selected>${areaNombre}</option>`;
-					if (depId && depSelect) depSelect.innerHTML += `<option value="${depId}" selected>${depNombre}</option>`;
+					if (areaId && areaSelect) areaSelect.add(new Option(String(areaNombre || ""), String(areaId), true, true));
+					if (depId && depSelect) depSelect.add(new Option(String(depNombre || ""), String(depId), true, true));
 					if (areaHidden) areaHidden.value = areaId;
 					if (depHidden) depHidden.value = depId;
 			} else {
@@ -414,7 +414,7 @@
 			});
 		}
 		// Sincronizar SIEMPRE justo antes de enviar el formulario de agregar
-		var formNuevo = document.querySelector("form[action='{{ url_for('crud_correos') }}']");
+		var formNuevo = document.querySelector("form[action='{{ url_for('telecom.crud_correos') }}']");
 		if (formNuevo) {
 			formNuevo.addEventListener('submit', function(e) {
 				var areaHidden = document.getElementById('nuevaAreaHidden');
@@ -453,8 +453,8 @@
 				var areaNombre = col.area && (col.area.nombre || col.area.AREA) ? (col.area.nombre || col.area.AREA) : (col.area_nombre || col.areaNombre || '');
 				var depId = col.departamento && (col.departamento.id || col.departamento.ID_DEPARTAMENTOS || col.departamento.ID) ? (col.departamento.id || col.departamento.ID_DEPARTAMENTOS || col.departamento.ID) : (col.departamento_id || col.departamentoId || '');
 				var depNombre = col.departamento && (col.departamento.nombre || col.departamento.DEPARTAMENTO) ? (col.departamento.nombre || col.departamento.DEPARTAMENTO) : (col.departamento_nombre || col.departamentoNombre || '');
-				if (areaId && areaSelect) areaSelect.innerHTML += `<option value="${areaId}" selected>${areaNombre}</option>`;
-				if (depId && depSelect) depSelect.innerHTML += `<option value="${depId}" selected>${depNombre}</option>`;
+				if (areaId && areaSelect) areaSelect.add(new Option(String(areaNombre || ""), String(areaId), true, true));
+				if (depId && depSelect) depSelect.add(new Option(String(depNombre || ""), String(depId), true, true));
 				if (areaHidden) areaHidden.value = areaId;
 				if (depHidden) depHidden.value = depId;
 			}
@@ -477,8 +477,8 @@
 				var areaNombre = col.area && (col.area.nombre || col.area.AREA) ? (col.area.nombre || col.area.AREA) : (col.area_nombre || col.areaNombre || '');
 				var depId = col.departamento && (col.departamento.id || col.departamento.ID_DEPARTAMENTOS || col.departamento.ID) ? (col.departamento.id || col.departamento.ID_DEPARTAMENTOS || col.departamento.ID) : (col.departamento_id || col.departamentoId || '');
 				var depNombre = col.departamento && (col.departamento.nombre || col.departamento.DEPARTAMENTO) ? (col.departamento.nombre || col.departamento.DEPARTAMENTO) : (col.departamento_nombre || col.departamentoNombre || '');
-				if (areaId && areaSelect) areaSelect.innerHTML += `<option value="${areaId}" selected>${areaNombre}</option>`;
-				if (depId && depSelect) depSelect.innerHTML += `<option value="${depId}" selected>${depNombre}</option>`;
+				if (areaId && areaSelect) areaSelect.add(new Option(String(areaNombre || ""), String(areaId), true, true));
+				if (depId && depSelect) depSelect.add(new Option(String(depNombre || ""), String(depId), true, true));
 				if (areaHidden) areaHidden.value = areaId;
 				if (depHidden) depHidden.value = depId;
 			} else {
@@ -704,6 +704,7 @@
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 	<script src="{{ url_for('static', filename='js/crud-search.js') }}"></script>
 	<script src="{{ url_for('static', filename='js/delete-confirmation.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/lookup-autocomplete.js') }}"></script>
 </body>
 
 </html>

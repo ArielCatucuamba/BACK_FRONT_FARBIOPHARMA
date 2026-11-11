@@ -33,6 +33,7 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+    .management-header__logout-form { margin: 0; }
     .management-header__logout {
         display: inline-flex;
         min-height: 38px;
@@ -48,6 +49,8 @@
         font-size: .88rem;
         font-weight: 650;
         text-decoration: none;
+        cursor: pointer;
+        font-family: inherit;
         transition: background-color .18s ease, border-color .18s ease, transform .18s ease;
     }
     .management-header__logout:hover,

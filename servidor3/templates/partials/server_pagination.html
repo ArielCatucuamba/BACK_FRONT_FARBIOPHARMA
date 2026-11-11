@@ -1,0 +1,29 @@
+{% if pagination and pagination.total > 0 %}
+{% set is_directory = request.blueprint == 'directory' %}
+<div class="crud-pagination-footer server-pagination{% if is_directory %} server-pagination--directory{% endif %}" aria-label="Paginación de resultados">
+  <p class="crud-pagination-summary{% if is_directory %} directory-results-count{% endif %}" aria-live="polite">
+    Mostrando {{ pagination.start }} - {{ pagination.end }} de {{ pagination.total }} registros
+  </p>
+  <nav class="crud-pagination-controls{% if is_directory %} directory-pagination{% endif %}" aria-label="Páginas">
+    {% if pagination.previous_url %}
+      <a class="crud-page-button{% if is_directory %} directory-page-button{% endif %}" href="{{ pagination.previous_url }}" rel="prev" aria-label="Página anterior">‹</a>
+    {% else %}
+      <span class="crud-page-button is-disabled{% if is_directory %} directory-page-button{% endif %}" aria-disabled="true">‹</span>
+    {% endif %}
+    {% for item in pagination.page_links %}
+      {% if item.ellipsis %}
+        <span class="crud-page-ellipsis{% if is_directory %} directory-page-ellipsis{% endif %}" aria-hidden="true">…</span>
+      {% elif item.page == pagination.page %}
+        <span class="crud-page-button is-active{% if is_directory %} directory-page-button{% endif %}" aria-current="page">{{ item.page }}</span>
+      {% else %}
+        <a class="crud-page-button{% if is_directory %} directory-page-button{% endif %}" href="{{ item.url }}" aria-label="Ir a la página {{ item.page }}">{{ item.page }}</a>
+      {% endif %}
+    {% endfor %}
+    {% if pagination.next_url %}
+      <a class="crud-page-button{% if is_directory %} directory-page-button{% endif %}" href="{{ pagination.next_url }}" rel="next" aria-label="Página siguiente">›</a>
+    {% else %}
+      <span class="crud-page-button is-disabled{% if is_directory %} directory-page-button{% endif %}" aria-disabled="true">›</span>
+    {% endif %}
+  </nav>
+</div>
+{% endif %}

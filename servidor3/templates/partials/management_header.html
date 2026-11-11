@@ -1,15 +1,19 @@
 {% set nombre_mostrado = session.get('display_name') or session.get('username') or 'Usuario' %}
+{% from 'partials/csrf_field.html' import csrf_field %}
 <header class="management-header{% if header_context|default(false) %} management-header--context{% endif %}" aria-label="Cabecera de sesión">
     <div class="management-header__identity">
         <span class="management-header__welcome">Bienvenido,</span>
         <span class="management-header__name" title="{{ nombre_mostrado }}">{{ nombre_mostrado }}</span>
     </div>
-    <a class="management-header__logout" href="{{ url_for('logout') }}" target="_top">
-        <svg class="management-header__logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M10 17l5-5-5-5" />
-            <path d="M15 12H3" />
-            <path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" />
-        </svg>
-        <span>Cerrar sesión</span>
-    </a>
+    <form class="management-header__logout-form" method="POST" action="{{ url_for('auth.logout') }}" target="_top">
+        {{ csrf_field(csrf_token_value) }}
+        <button class="management-header__logout" type="submit">
+            <svg class="management-header__logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10 17l5-5-5-5" />
+                <path d="M15 12H3" />
+                <path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" />
+            </svg>
+            <span>Cerrar sesión</span>
+        </button>
+    </form>
 </header>

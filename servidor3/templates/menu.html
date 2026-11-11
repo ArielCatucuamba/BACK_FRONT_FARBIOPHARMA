@@ -174,6 +174,7 @@
                 <li><button class="menu-btn" data-url="/extensiones" type="button"><i class="bi bi-telephone"></i> Extensiones</button></li>
                 <li><button class="menu-btn" data-url="/celulares" type="button"><i class="bi bi-phone"></i> Celulares</button></li>
                 <li><button class="menu-btn" data-url="/correos" type="button"><i class="bi bi-envelope"></i> Correos</button></li>
+                <li><button class="menu-btn" data-url="/vextensiones" type="button"><i class="bi bi-card-list"></i> Directorio telefónico</button></li>
                 <li><button class="menu-btn" data-url="/vehiculos" type="button"><i class="bi bi-car-front"></i> Vehículos</button></li>
                 <li><button class="menu-btn" data-url="/jerarquia" type="button"><i class="bi bi-diagram-3"></i> Jerarquía</button></li>
                 <li><button class="menu-btn" data-url="/sso/navew/organigrama" type="button"><i class="bi bi-diagram-2"></i> Organigrama</button></li>
@@ -196,6 +197,10 @@
                 button.classList.add('active');
                 const esOrganigrama = button.dataset.url === '/sso/navew/organigrama';
                 document.querySelector('.workspace').classList.toggle('has-context-header', esOrganigrama);
+                if (button.dataset.url === '/vextensiones') {
+                    window.location.assign(button.dataset.url);
+                    return;
+                }
                 moduleFrame.src = button.dataset.url;
             });
         });

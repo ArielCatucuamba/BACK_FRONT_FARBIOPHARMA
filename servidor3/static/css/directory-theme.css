@@ -261,6 +261,17 @@ body {
     background: #fff;
 }
 
+.server-pagination--directory {
+    display: flex;
+    min-height: 58px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 16px;
+    border-top: 1px solid #edf1f4;
+    background: #fff;
+}
+
 .directory-results-count {
     margin: 0;
     color: var(--directory-muted);
@@ -304,6 +315,12 @@ body {
 .directory-page-button:disabled {
     color: #b1bdc5;
     cursor: not-allowed;
+}
+
+.directory-page-button.is-disabled {
+    color: #b1bdc5;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 .directory-page-button:focus-visible {
@@ -385,7 +402,8 @@ body {
     .directory-search { grid-column: auto; }
     .directory-table { min-width: 680px; }
     .directory-table thead th, .directory-table tbody td { padding: 10px 12px; font-size: .82rem; }
-    .directory-table-footer { align-items: flex-start; flex-direction: column; gap: 8px; padding: 12px; }
+    .directory-table-footer,
+    .server-pagination--directory { align-items: flex-start; flex-direction: column; gap: 8px; padding: 12px; }
     .directory-pagination { width: 100%; justify-content: center; gap: 3px; }
     .directory-page-button { min-width: 30px; height: 30px; padding: 0 6px; }
 }

@@ -1,3 +1,4 @@
+{% from 'partials/csrf_field.html' import csrf_field %}
 <!DOCTYPE html>
 <html lang="es">
 
@@ -123,6 +124,7 @@
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<form id="formEditar" method="POST">
+{{ csrf_field(csrf_token_value) }}
 						<div class="modal-header">
 							<h5 class="modal-title" id="modalEditarLabel">Editar Ubicación</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -157,7 +159,8 @@
 		<div class="modal fade" id="modalAgregar" tabindex="-1" aria-labelledby="modalAgregarLabel" aria-hidden="true">
 			<div class="modal-dialog">
 				<div class="modal-content">
-					<form method="POST" action="{{ url_for('ubicaciones') }}">
+					<form method="POST" action="{{ url_for('structure.ubicaciones') }}">
+{{ csrf_field(csrf_token_value) }}
 						<div class="modal-header">
 							<h5 class="modal-title" id="modalAgregarLabel">Agregar Ubicación</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -197,6 +200,7 @@
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<form id="formEditar" method="POST">
+{{ csrf_field(csrf_token_value) }}
 						<div class="modal-header">
 							<h5 class="modal-title" id="modalEditarLabel">Editar Departamento</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -249,7 +253,8 @@
 							data-direccion="{{ ubi[3]|e }}" onclick="llenarFormularioEditarDesdeBoton(this)">
 							<i class="bi bi-pencil"></i>
 						</button>
-						<form method="POST" action="{{ url_for('eliminar_ubicacion', id=ubi[0]) }}" class="d-inline confirm-delete-ubicacion js-delete-confirmation" data-delete-entity="la ubicación" data-delete-item="{{ ubi[1]|e }}">
+						<form method="POST" action="{{ url_for('structure.eliminar_ubicacion', id=ubi[0]) }}" class="d-inline confirm-delete-ubicacion js-delete-confirmation" data-delete-entity="la ubicación" data-delete-item="{{ ubi[1]|e }}">
+{{ csrf_field(csrf_token_value) }}
 							<button type="submit" class="btn btn-sm btn-danger btn-action" title="Eliminar"><i
 									class="bi bi-trash"></i></button>
 						</form>
@@ -262,6 +267,7 @@
 				{% endif %}
 			</tbody>
 		</table>
+                    {% include 'partials/server_pagination.html' %}
 		</div>
 		</section>
 		</main>
@@ -297,7 +303,7 @@
 
 	// Validación para el formulario de agregar y editar
 	document.addEventListener('DOMContentLoaded', function() {
-		var formAgregar = document.querySelector("form[action='{{ url_for('ubicaciones') }}']");
+		var formAgregar = document.querySelector("form[action='{{ url_for('structure.ubicaciones') }}']");
 		if (formAgregar) {
 			formAgregar.addEventListener('submit', function(e) {
 				var direccion = document.getElementById('nuevaDireccion').value;

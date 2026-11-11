@@ -36,13 +36,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const pagination = document.querySelector('[data-pagination="controls"]');
     if (!tbody || !search || !areaSelect || !departmentSelect || !noResults || !summary || !pagination) return;
 
-    const pageSize = 10;
-    let currentPage = 1;
-
     const rows = Array.from(tbody.querySelectorAll('tr')).filter(row =>
         settings.textFields.every(selector => row.querySelector(selector)) &&
         row.querySelector(settings.areaField) && row.querySelector(settings.departmentField)
     );
+    const hasServerPagination = Boolean(document.querySelector('.server-pagination'));
+    const pageSize = hasServerPagination ? Math.max(rows.length, 1) : 10;
+    let currentPage = 1;
+    if (hasServerPagination) summary.closest('.directory-table-footer').hidden = true;
 
     function normalize(value) {
         return (value || '').toString().normalize('NFD')
@@ -157,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function () {
         summary.textContent = totalRows
             ? `Mostrando ${startIndex + 1} - ${endIndex} de ${totalRows} registros`
             : 'Mostrando 0 registros';
-        summary.closest('.directory-table-footer').hidden = totalRows === 0;
+        summary.closest('.directory-table-footer').hidden = hasServerPagination || totalRows === 0;
         renderPagination(totalPages);
     }
 
