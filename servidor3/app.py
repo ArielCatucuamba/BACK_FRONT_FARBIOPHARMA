@@ -23,6 +23,7 @@ from datetime import timedelta
 import hashlib
 import os
 import re
+import secrets
 import socket
 import time
 
@@ -74,6 +75,28 @@ def proteger_panel_recursos_humanos():
     if rol_normalizado(session.get('user_role')) not in {'talentohumano', 'administrador'}:
         abort(403)
 
+    # Completa sesiones existentes creadas antes de guardar el nombre visible.
+    if not session.get('display_name'):
+        cursor = None
+        try:
+            cursor = mysql.connection.cursor()
+            cursor.execute(
+                """SELECT COALESCE(NULLIF(c.NOMBRE, ''), NULLIF(u.username, ''), u.email)
+                   FROM usuarios u
+                   LEFT JOIN Colaboradores c ON c.CEDULA = u.cedula
+                   WHERE u.id = %s
+                   LIMIT 1""",
+                (session['user_id'],)
+            )
+            usuario = cursor.fetchone()
+            if usuario and usuario[0]:
+                session['display_name'] = usuario[0]
+        except Exception:
+            app.logger.warning('No se pudo recuperar el nombre visible de la sesion')
+        finally:
+            if cursor:
+                cursor.close()
+
 
 @app.route('/sso/consume', methods=['POST'])
 def sso_consume():
@@ -105,9 +128,10 @@ def sso_consume():
         if codigo_valido:
             # Recuperar la cuenta vigente dentro de la misma transacción.
             cursor.execute(
-                """SELECT u.id, u.email, u.rol, u.estado
+                """SELECT u.id, u.email, u.rol, u.estado, u.username, c.NOMBRE
                    FROM rrhh_sso_codes s
                    INNER JOIN usuarios u ON u.id = s.user_id
+                   LEFT JOIN Colaboradores c ON c.CEDULA = u.cedula
                    WHERE s.code_hash = %s
                    LIMIT 1""",
                 (hash_codigo,)
@@ -131,9 +155,41 @@ def sso_consume():
     session.clear()
     session['user_id'] = usuario[0]
     session['username'] = usuario[1]
+    session['display_name'] = usuario[5] or usuario[4] or usuario[1]
     session['user_role'] = usuario[2]
     session.permanent = True
     return redirect(url_for('menu'))
+
+
+@app.route('/sso/navew/organigrama', methods=['GET'])
+def abrir_organigrama_navew():
+    """Emite un codigo de un solo uso para abrir NAVEW desde el menu de RRHH."""
+    if rol_normalizado(session.get('user_role')) != 'talentohumano':
+        abort(403)
+
+    codigo = secrets.token_urlsafe(32)
+    hash_codigo = hashlib.sha256(codigo.encode('ascii')).hexdigest()
+    cursor = mysql.connection.cursor()
+    try:
+        cursor.execute(
+            """DELETE FROM rrhh_sso_codes
+               WHERE expires_at <= UTC_TIMESTAMP() OR consumed_at IS NOT NULL"""
+        )
+        cursor.execute(
+            """INSERT INTO rrhh_sso_codes (code_hash, user_id, expires_at)
+               VALUES (%s, %s, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 60 SECOND))""",
+            (hash_codigo, session['user_id'])
+        )
+        mysql.connection.commit()
+    except Exception:
+        mysql.connection.rollback()
+        app.logger.error('No se pudo emitir el codigo SSO hacia NAVEW')
+        abort(503)
+    finally:
+        cursor.close()
+
+    destino = f"{app.config['NAVEW_FRONTEND_ORIGIN']}/sso/rrhh#code={codigo}"
+    return redirect(destino, code=303)
 
 def wait_for_db():
     """Esperar a que la base de datos esté disponible"""

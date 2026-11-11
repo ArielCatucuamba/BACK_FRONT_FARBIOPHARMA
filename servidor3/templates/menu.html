@@ -101,8 +101,10 @@
             min-width: 0;
             height: 100vh;
             height: 100dvh;
-            overflow: auto;
-            background: #fff;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #f3f6fa;
             border: 0;
             border-radius: 0;
             box-shadow: none;
@@ -111,8 +113,10 @@
             display: block;
             width: 100%;
             height: 100%;
+            flex: 1 1 auto;
+            min-height: 0;
             border: 0;
-            background: #fff;
+            background: #f3f6fa;
         }
         @media (max-width: 1024px) {
             .sidebar { flex-basis: 210px; width: 210px; min-width: 210px; padding: 1rem .75rem; }
@@ -154,6 +158,7 @@
             .workspace { height: calc(100vh - 68px); height: calc(100dvh - 68px); }
         }
     </style>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/management-header.css') }}">
 </head>
 
 <body>
@@ -171,10 +176,13 @@
                 <li><button class="menu-btn" data-url="/correos" type="button"><i class="bi bi-envelope"></i> Correos</button></li>
                 <li><button class="menu-btn" data-url="/vehiculos" type="button"><i class="bi bi-car-front"></i> Vehículos</button></li>
                 <li><button class="menu-btn" data-url="/jerarquia" type="button"><i class="bi bi-diagram-3"></i> Jerarquía</button></li>
-                <li><button class="menu-btn" data-url="http://192.168.1.49:80" type="button"><i class="bi bi-diagram-2"></i> Organigrama</button></li>
+                <li><button class="menu-btn" data-url="/sso/navew/organigrama" type="button"><i class="bi bi-diagram-2"></i> Organigrama</button></li>
             </ul>
         </div>
         <div class="workspace">
+            {% with header_context = true %}
+                {% include 'partials/management_header.html' %}
+            {% endwith %}
             <iframe class="module-frame" id="moduleFrame" src="/crud_areas" title="Contenido del módulo seleccionado"></iframe>
         </div>
     </div>
@@ -186,6 +194,8 @@
             button.addEventListener('click', function () {
                 moduleButtons.forEach(item => item.classList.remove('active'));
                 button.classList.add('active');
+                const esOrganigrama = button.dataset.url === '/sso/navew/organigrama';
+                document.querySelector('.workspace').classList.toggle('has-context-header', esOrganigrama);
                 moduleFrame.src = button.dataset.url;
             });
         });

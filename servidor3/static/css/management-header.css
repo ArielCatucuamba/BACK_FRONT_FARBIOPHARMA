@@ -1,0 +1,87 @@
+/* Estilo compartido para la cabecera de gestion. */
+.management-header {
+        position: relative;
+        z-index: 10;
+        display: flex;
+        min-height: 58px;
+        flex: 0 0 58px;
+        align-items: center;
+        justify-content: flex-end;
+        gap: clamp(.8rem, 2vw, 1.5rem);
+        padding: .6rem clamp(1rem, 3vw, 2rem);
+        background: linear-gradient(105deg, #0d3b4e 0%, #14506b 100%);
+        color: #fff;
+        box-shadow: 0 4px 16px rgba(13, 59, 78, .16);
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+    }
+    .management-header__identity {
+        display: flex;
+        min-width: 0;
+        align-items: baseline;
+        gap: .55rem;
+    }
+    .management-header__welcome {
+        flex: 0 0 auto;
+        color: rgba(255, 255, 255, .76);
+        font-size: .9rem;
+    }
+    .management-header__name {
+        overflow: hidden;
+        color: #fff;
+        font-size: .95rem;
+        font-weight: 700;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .management-header__logout {
+        display: inline-flex;
+        min-height: 38px;
+        flex: 0 0 auto;
+        align-items: center;
+        justify-content: center;
+        gap: .5rem;
+        padding: .45rem .8rem;
+        border: 1px solid rgba(255, 255, 255, .28);
+        border-radius: 9px;
+        background: rgba(255, 255, 255, .08);
+        color: #fff;
+        font-size: .88rem;
+        font-weight: 650;
+        text-decoration: none;
+        transition: background-color .18s ease, border-color .18s ease, transform .18s ease;
+    }
+    .management-header__logout:hover,
+    .management-header__logout:focus-visible {
+        border-color: rgba(255, 255, 255, .55);
+        background: rgba(255, 255, 255, .17);
+        color: #fff;
+        transform: translateY(-1px);
+    }
+    .management-header__logout:focus-visible {
+        outline: 2px solid #b9d9e7;
+        outline-offset: 2px;
+    }
+    .management-header__logout-icon {
+        width: 17px;
+        height: 17px;
+        flex: 0 0 17px;
+    }
+    .management-header--context { display: none; }
+    .workspace.has-context-header .management-header--context { display: flex; }
+
+    @media (max-width: 640px) {
+        .management-header {
+            min-height: 52px;
+            flex-basis: 52px;
+            gap: .65rem;
+            padding: .45rem .8rem;
+        }
+        .management-header__welcome { display: none; }
+        .management-header__name { font-size: .86rem; }
+        .management-header__logout { min-height: 36px; padding: .4rem .65rem; font-size: .82rem; }
+    }
+    @media (max-width: 380px) {
+        .management-header { min-height: 48px; flex-basis: 48px; gap: .45rem; padding-inline: .6rem; }
+        .management-header__name { max-width: 45vw; font-size: .8rem; }
+        .management-header__logout { gap: .35rem; padding-inline: .5rem; font-size: .76rem; }
+    }
