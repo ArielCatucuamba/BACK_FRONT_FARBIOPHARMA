@@ -1,6 +1,9 @@
-{% if pagination and pagination.total > 0 %}
+{% if pagination and (pagination.total > 0 or request.blueprint == 'directory' or pagination.filters is defined) %}
 {% set is_directory = request.blueprint == 'directory' %}
 <div class="crud-pagination-footer server-pagination{% if is_directory %} server-pagination--directory{% endif %}" aria-label="Paginación de resultados">
+  {% if pagination.filters is defined %}
+  <script type="application/json" class="gestion-filter-data">{{ pagination.filters|tojson }}</script>
+  {% endif %}
   <p class="crud-pagination-summary{% if is_directory %} directory-results-count{% endif %}" aria-live="polite">
     Mostrando {{ pagination.start }} - {{ pagination.end }} de {{ pagination.total }} registros
   </p>

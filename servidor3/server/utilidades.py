@@ -31,12 +31,15 @@ def rol_normalizado(rol):
     return ''.join(str(rol or '').strip().lower().split())
 
 
-def paginar_consulta(cursor, consulta, parametros, consulta_total):
+def paginar_consulta(cursor, consulta, parametros, consulta_total, parametros_total=()):
     try:
         pagina = max(1, int(request.args.get('page', '1')))
     except (TypeError, ValueError):
         pagina = 1
-    cursor.execute(consulta_total)
+    if parametros_total:
+        cursor.execute(consulta_total, tuple(parametros_total))
+    else:
+        cursor.execute(consulta_total)
     total = int(cursor.fetchone()[0] or 0)
     paginas = max(1, math.ceil(total / PAGE_SIZE))
     pagina = min(pagina, paginas)
@@ -44,13 +47,14 @@ def paginar_consulta(cursor, consulta, parametros, consulta_total):
     datos = cursor.fetchall()
     def url_pagina(numero):
         query_args = request.args.to_dict()
+        query_args.pop('format', None)
         query_args['page'] = numero
         return url_for(request.endpoint, **query_args)
 
     enlaces = [
         {'page': numero, 'url': url_pagina(numero)} if numero is not None else {'ellipsis': True}
         for numero in _paginas_visibles(pagina, paginas)
-    ]
+    ] if total else []
     return datos, {
         'page': pagina, 'pages': paginas, 'total': total,
         'start': (pagina - 1) * PAGE_SIZE + 1 if total else 0,

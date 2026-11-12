@@ -36,144 +36,219 @@ document.addEventListener('DOMContentLoaded', function () {
     const pagination = document.querySelector('[data-pagination="controls"]');
     if (!tbody || !search || !areaSelect || !departmentSelect || !noResults || !summary || !pagination) return;
 
-    const rows = Array.from(tbody.querySelectorAll('tr')).filter(row =>
+    let rows = Array.from(tbody.querySelectorAll('tr')).filter(row =>
         settings.textFields.every(selector => row.querySelector(selector)) &&
         row.querySelector(settings.areaField) && row.querySelector(settings.departmentField)
     );
-    const hasServerPagination = Boolean(document.querySelector('.server-pagination'));
-    const pageSize = hasServerPagination ? Math.max(rows.length, 1) : 10;
-    let currentPage = 1;
-    if (hasServerPagination) summary.closest('.directory-table-footer').hidden = true;
-
-    function normalize(value) {
-        return (value || '').toString().normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase();
-    }
-
-    function buildDepartmentAreaOptions(selectedDepartment, previousArea) {
-        const selectedKey = normalize(selectedDepartment);
-        const areas = new Map();
-        rows.forEach(row => {
-            const department = row.querySelector(settings.departmentField).textContent.trim();
-            const area = row.querySelector(settings.areaField).textContent.trim();
-            if (area && (!selectedKey || normalize(department) === selectedKey)) {
-                areas.set(normalize(area), area);
-            }
-        });
-
-        const options = Array.from(areas.values()).sort((a, b) => a.localeCompare(b, 'es'));
+    const hasServerPagination = search.dataset.globalSearch === 'true';
+    function refreshFacetOptions(filters, selectedDepartment, selectedArea) {
+        const departmentValues = filters && Array.isArray(filters.departamentos) ? filters.departamentos : [];
+        const areaValues = filters && Array.isArray(filters.areas) ? filters.areas : [];
+        departmentSelect.replaceChildren(new Option('Todos los departamentos', ''));
+        departmentValues.forEach(value => departmentSelect.add(new Option(value, value)));
         areaSelect.replaceChildren(new Option('Todas las áreas', ''));
-        options.forEach(area => areaSelect.add(new Option(area, area)));
-        if (options.some(area => normalize(area) === normalize(previousArea))) {
-            areaSelect.value = options.find(area => normalize(area) === normalize(previousArea));
-        }
-    }
-
-    function getFilteredRows() {
-        const query = normalize(search.value);
-        const selectedArea = normalize(areaSelect.value);
-        const selectedDepartment = normalize(departmentSelect.value);
-
-        return rows.filter(row => {
-            const textMatches = settings.textFields.some(selector =>
-                normalize(row.querySelector(selector).textContent).includes(query)
-            );
-            const areaMatches = !selectedArea ||
-                normalize(row.querySelector(settings.areaField).textContent) === selectedArea;
-            const departmentMatches = !selectedDepartment ||
-                normalize(row.querySelector(settings.departmentField).textContent) === selectedDepartment;
-            return textMatches && areaMatches && departmentMatches;
-        });
-    }
-
-    function createPageButton(label, page, options = {}) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'directory-page-button';
-        button.textContent = label;
-        button.disabled = Boolean(options.disabled);
-        button.setAttribute('aria-label', options.ariaLabel || `Ir a la página ${page}`);
-        if (options.active) {
-            button.classList.add('is-active');
-            button.setAttribute('aria-current', 'page');
-        }
-        button.addEventListener('click', function () {
-            if (button.disabled || page === currentPage) return;
-            currentPage = page;
-            render();
-        });
-        return button;
-    }
-
-    function getPageNumbers(totalPages) {
-        if (totalPages <= 7) return Array.from({ length: totalPages }, (_, index) => index + 1);
-
-        const pages = new Set([1, totalPages]);
-        const start = Math.max(2, Math.min(currentPage - 1, totalPages - 4));
-        const end = Math.min(totalPages - 1, Math.max(currentPage + 1, 5));
-        for (let page = start; page <= end; page += 1) pages.add(page);
-        return Array.from(pages).sort((left, right) => left - right);
-    }
-
-    function renderPagination(totalPages) {
-        pagination.replaceChildren();
-        if (totalPages <= 1) return;
-
-        pagination.appendChild(createPageButton('‹', Math.max(1, currentPage - 1), {
-            disabled: currentPage === 1,
-            ariaLabel: 'Página anterior'
-        }));
-
-        let previousPage = 0;
-        getPageNumbers(totalPages).forEach(function (page) {
-            if (previousPage && page - previousPage > 1) {
-                const ellipsis = document.createElement('span');
-                ellipsis.className = 'directory-page-ellipsis';
-                ellipsis.textContent = '…';
-                ellipsis.setAttribute('aria-hidden', 'true');
-                pagination.appendChild(ellipsis);
-            }
-            pagination.appendChild(createPageButton(String(page), page, { active: page === currentPage }));
-            previousPage = page;
-        });
-
-        pagination.appendChild(createPageButton('›', Math.min(totalPages, currentPage + 1), {
-            disabled: currentPage === totalPages,
-            ariaLabel: 'Página siguiente'
-        }));
+        areaValues.forEach(value => areaSelect.add(new Option(value, value)));
+        departmentSelect.value = departmentValues.includes(selectedDepartment) ? selectedDepartment : '';
+        areaSelect.value = areaValues.includes(selectedArea) ? selectedArea : '';
     }
 
     function render() {
-        const filteredRows = getFilteredRows();
-        const totalRows = filteredRows.length;
-        const totalPages = Math.ceil(totalRows / pageSize);
-        currentPage = totalPages ? Math.min(currentPage, totalPages) : 1;
-        const startIndex = (currentPage - 1) * pageSize;
-        const endIndex = Math.min(startIndex + pageSize, totalRows);
-        const pageRows = new Set(filteredRows.slice(startIndex, endIndex));
-
-        rows.forEach(row => { row.hidden = !pageRows.has(row); });
-        noResults.hidden = totalRows > 0;
+        // El servidor ya aplica los filtros y devuelve hasta 10 registros.
+        rows.forEach(row => { row.hidden = false; });
+        noResults.hidden = rows.length > 0;
         noResults.textContent = settings.emptyText;
-        summary.textContent = totalRows
-            ? `Mostrando ${startIndex + 1} - ${endIndex} de ${totalRows} registros`
-            : 'Mostrando 0 registros';
-        summary.closest('.directory-table-footer').hidden = hasServerPagination || totalRows === 0;
-        renderPagination(totalPages);
+        summary.closest('.directory-table-footer').hidden = true;
     }
 
-    function resetAndRender() {
-        currentPage = 1;
+    let searchTimer;
+    let activeSearchRequest;
+    let searchRequestId = 0;
+    let lastLoadedUrl = new URL(window.location.href).href;
+
+    function updateRows(items, filters, selectedDepartment, selectedArea, refreshFilters) {
+        const cellClasses = [
+            ...settings.textFields.map(selector => selector.slice(1)),
+            settings.areaField.slice(1),
+            settings.departmentField.slice(1),
+        ];
+        const fragment = document.createDocumentFragment();
+        (items || []).forEach(item => {
+            const row = document.createElement('tr');
+            const values = [item.nombre, item.dato, item.area, item.departamento];
+            values.forEach((value, index) => {
+                const cell = document.createElement('td');
+                cell.className = cellClasses[index];
+                cell.textContent = value == null ? '' : String(value);
+                row.appendChild(cell);
+            });
+            fragment.appendChild(row);
+        });
+        tbody.replaceChildren(fragment);
+        rows = Array.from(tbody.querySelectorAll('tr'));
+        if (refreshFilters) refreshFacetOptions(filters, selectedDepartment, selectedArea);
         render();
     }
 
-    buildDepartmentAreaOptions('', '');
-    search.addEventListener('input', resetAndRender);
-    departmentSelect.addEventListener('change', function () {
-        const previousArea = areaSelect.value;
-        buildDepartmentAreaOptions(departmentSelect.value, previousArea);
-        resetAndRender();
+    function requestUrl(displayUrl) {
+        const url = new URL(displayUrl, window.location.origin);
+        url.searchParams.set('format', 'json');
+        return url;
+    }
+
+    function attachPageLink(link) {
+        link.addEventListener('click', function (event) {
+            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            loadPage(link.href, 'push');
+        });
+    }
+
+    function renderServerPagination(pageInfo) {
+        const container = document.querySelector('.server-pagination');
+        if (!container) return;
+        const summaryText = container.querySelector('.crud-pagination-summary');
+        const controls = container.querySelector('.crud-pagination-controls');
+        if (summaryText) {
+            summaryText.textContent = pageInfo.total
+                ? `Mostrando ${pageInfo.start} - ${pageInfo.end} de ${pageInfo.total} registros`
+                : 'Mostrando 0 registros';
+        }
+        if (!controls) return;
+
+        controls.replaceChildren();
+        const addArrow = (label, url, ariaLabel) => {
+            if (!url) {
+                const disabled = document.createElement('span');
+                disabled.className = 'crud-page-button directory-page-button is-disabled';
+                disabled.textContent = label;
+                disabled.setAttribute('aria-disabled', 'true');
+                controls.appendChild(disabled);
+                return;
+            }
+            const link = document.createElement('a');
+            link.className = 'crud-page-button directory-page-button';
+            link.href = url;
+            link.textContent = label;
+            link.setAttribute('aria-label', ariaLabel);
+            link.rel = label === '‹' ? 'prev' : 'next';
+            attachPageLink(link);
+            controls.appendChild(link);
+        };
+
+        addArrow('‹', pageInfo.previous_url, 'Página anterior');
+        (pageInfo.page_links || []).forEach(item => {
+            if (item.ellipsis) {
+                const ellipsis = document.createElement('span');
+                ellipsis.className = 'crud-page-ellipsis directory-page-ellipsis';
+                ellipsis.textContent = '…';
+                ellipsis.setAttribute('aria-hidden', 'true');
+                controls.appendChild(ellipsis);
+            } else if (item.page === pageInfo.page) {
+                const current = document.createElement('span');
+                current.className = 'crud-page-button directory-page-button is-active';
+                current.textContent = String(item.page);
+                current.setAttribute('aria-current', 'page');
+                controls.appendChild(current);
+            } else {
+                const link = document.createElement('a');
+                link.className = 'crud-page-button directory-page-button';
+                link.href = item.url;
+                link.textContent = String(item.page);
+                link.setAttribute('aria-label', `Ir a la página ${item.page}`);
+                attachPageLink(link);
+                controls.appendChild(link);
+            }
+        });
+        addArrow('›', pageInfo.next_url, 'Página siguiente');
+    }
+
+    function cancelPending() {
+        window.clearTimeout(searchTimer);
+        if (activeSearchRequest) activeSearchRequest.abort();
+        searchRequestId += 1;
+    }
+
+    async function loadPage(displayUrl, historyMode, refreshFilters = false, restoreSearch = false) {
+        cancelPending();
+        const targetUrl = new URL(displayUrl, window.location.origin);
+        if (historyMode === 'replace' && targetUrl.href === lastLoadedUrl) return;
+        const controller = new AbortController();
+        activeSearchRequest = controller;
+        const requestId = searchRequestId;
+        try {
+            const response = await fetch(requestUrl(displayUrl), {
+                credentials: 'same-origin',
+                headers: { Accept: 'application/json' },
+                signal: controller.signal,
+            });
+            if (!response.ok) throw new Error('No se pudo buscar en el directorio.');
+            const result = await response.json();
+            if (requestId !== searchRequestId) return;
+
+            const url = new URL(displayUrl, window.location.origin);
+            url.searchParams.delete('format');
+            if (restoreSearch) search.value = url.searchParams.get('q') || '';
+            const selectedDepartment = url.searchParams.get('departamento') || '';
+            const selectedArea = url.searchParams.get('area') || '';
+            if (historyMode === 'push') history.pushState({}, '', `${url.pathname}${url.search}`);
+            else if (historyMode === 'replace') history.replaceState({}, '', `${url.pathname}${url.search}`);
+            updateRows(result.items, result.filters, selectedDepartment, selectedArea, refreshFilters);
+            renderServerPagination(result.pagination);
+            lastLoadedUrl = url.href;
+        } catch (error) {
+            if (requestId === searchRequestId && error.name !== 'AbortError') {
+                noResults.textContent = 'No se pudo buscar. Intenta de nuevo.';
+                noResults.hidden = false;
+            }
+        }
+    }
+
+    function urlForSearch() {
+        const url = new URL(window.location.href);
+        const termino = search.value.trim();
+        const department = departmentSelect.value;
+        const area = areaSelect.value;
+        if (termino) url.searchParams.set('q', termino);
+        else url.searchParams.delete('q');
+        if (department) url.searchParams.set('departamento', department);
+        else url.searchParams.delete('departamento');
+        if (area) url.searchParams.set('area', area);
+        else url.searchParams.delete('area');
+        url.searchParams.delete('page');
+        url.searchParams.delete('format');
+        return `${url.pathname}${url.search}`;
+    }
+
+    function onSearchInput() {
+        if (!hasServerPagination) return;
+        cancelPending();
+        searchTimer = window.setTimeout(() => loadPage(urlForSearch(), 'replace'), 150);
+    }
+
+    function attachInitialPaginationLinks() {
+        document.querySelectorAll('.server-pagination a').forEach(attachPageLink);
+    }
+
+    attachInitialPaginationLinks();
+    search.addEventListener('input', onSearchInput);
+    search.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' && hasServerPagination) {
+            event.preventDefault();
+            window.clearTimeout(searchTimer);
+            loadPage(urlForSearch(), 'replace');
+        }
     });
-    areaSelect.addEventListener('change', resetAndRender);
+    departmentSelect.addEventListener('change', function () {
+        areaSelect.value = '';
+        window.clearTimeout(searchTimer);
+        loadPage(urlForSearch(), 'replace', true);
+    });
+    areaSelect.addEventListener('change', function () {
+        window.clearTimeout(searchTimer);
+        loadPage(urlForSearch(), 'replace');
+    });
     render();
+    window.addEventListener('popstate', function () {
+        if (hasServerPagination) loadPage(window.location.href, 'none', true, true);
+    });
 });

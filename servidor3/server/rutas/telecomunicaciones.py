@@ -1,6 +1,7 @@
 from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, session, url_for
 from ..extensiones import mysql
-from ..utilidades import paginar_consulta, rol_normalizado
+from ..utilidades import rol_normalizado
+from ..filtrosGestion import paginar_gestion
 import re
 
 
@@ -113,7 +114,7 @@ def crud_extensiones():
             current_app.logger.exception('Error al agregar extensión')
             flash('No se pudo agregar la extensión. Revisa los datos e inténtalo de nuevo.', 'danger')
     # Leer: mostrar área y departamento actual del colaborador relacionado
-    extensiones, pagination = paginar_consulta(cur, """
+    extensiones, pagination = paginar_gestion(cur, """
         SELECT e.ID_EXTENSIONES, c.NOMBRE, e.EXTENSION, a.AREA, d.DEPARTAMENTO, e.AREA, e.DEPARTAMENTO, e.ID_COLABORADOR
         FROM Extensiones e
         LEFT JOIN Colaboradores c ON e.ID_COLABORADOR = c.ID_COLABORADOR
@@ -222,7 +223,7 @@ def crud_celulares():
                 current_app.logger.exception('Error al agregar celular')
                 flash('No se pudo agregar el celular. Revisa los datos e inténtalo de nuevo.', 'danger')
     # Leer: mostrar área y departamento actual del colaborador relacionado
-    celulares, pagination = paginar_consulta(cur, """
+    celulares, pagination = paginar_gestion(cur, """
         SELECT c.ID_CELULARES, col.NOMBRE, c.CELULAR, a.AREA, d.DEPARTAMENTO, cg.AREA, cg.DEPARTAMENTO, c.ID_COLABORADOR
         FROM Celulares c
         LEFT JOIN Colaboradores col ON c.ID_COLABORADOR = col.ID_COLABORADOR
@@ -297,7 +298,7 @@ def crud_correos():
                 current_app.logger.exception('Error al agregar correo')
                 flash('No se pudo agregar el correo. Revisa los datos e inténtalo de nuevo.', 'danger')
     # Leer: mostrar área y departamento actual del cargo del colaborador relacionado
-    correos, pagination = paginar_consulta(cur, """
+    correos, pagination = paginar_gestion(cur, """
         SELECT c.ID_CORREOS, col.NOMBRE, c.CORREO, a.AREA, d.DEPARTAMENTO, c.ID_COLABORADOR
         FROM Correos c
         LEFT JOIN Colaboradores col ON c.ID_COLABORADOR = col.ID_COLABORADOR

@@ -33,20 +33,18 @@
             <section class="directory-filter-card" aria-label="Filtros de extensiones">
                 <div class="input-group directory-search">
                     <span class="input-group-text" aria-hidden="true"><i class="bi bi-search"></i></span>
-                    <input type="search" id="filtroNombre" class="form-control" placeholder="Buscar por nombre o extensión..." aria-label="Buscar extensiones" data-filter="search">
+                    <input type="search" id="filtroNombre" class="form-control" placeholder="Buscar por nombre o extensión..." aria-label="Buscar extensiones" data-filter="search" data-global-search="true" value="{{ search_query|default('', true)|e }}">
                 </div>
                 <select id="filtroDepartamento" class="form-select" aria-label="Filtrar por departamento" data-filter="department">
                     <option value="">Todos los departamentos</option>
-                        {% set deps_unicos = extensiones | map(attribute=4) | unique | list %}
-                        {% for dep in deps_unicos %}
-                            {% if dep %}<option value="{{ dep }}">{{ dep }}</option>{% endif %}
+                        {% for dep in departamentos %}
+                            <option value="{{ dep }}"{% if departamento_seleccionado == dep %} selected{% endif %}>{{ dep }}</option>
                         {% endfor %}
                 </select>
                 <select id="filtroArea" class="form-select" aria-label="Filtrar por área" data-filter="area">
                     <option value="">Todas las áreas</option>
-                        {% set areas_unicas = extensiones | map(attribute=3) | unique | list %}
-                        {% for area in areas_unicas %}
-                            {% if area %}<option value="{{ area }}">{{ area }}</option>{% endif %}
+                        {% for area in areas %}
+                            <option value="{{ area }}"{% if area_seleccionada == area %} selected{% endif %}>{{ area }}</option>
                         {% endfor %}
                 </select>
             </section>
@@ -82,7 +80,7 @@
             </section>
         </main>
     </div>
-    <script src="{{ url_for('static', filename='js/directory-filters.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/directory-filters.js', v='20261112-3') }}"></script>
 </body>
 
 </html>

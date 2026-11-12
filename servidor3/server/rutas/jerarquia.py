@@ -1,6 +1,7 @@
 from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, session, url_for
 from ..extensiones import mysql
-from ..utilidades import paginar_consulta, rol_normalizado
+from ..utilidades import rol_normalizado
+from ..filtrosGestion import paginar_gestion
 import re
 
 def jerarquia_crea_ciclo(cur, cargo_id, superior_id, departamento_id, area_id, planta, excluir_id=None):
@@ -189,7 +190,7 @@ def crud_jerarquia():
     departamentos = cur.fetchall()
     cur.execute("SELECT ID_UBICACIONES, DESCRIPCION FROM Ubicaciones ORDER BY ID_UBICACIONES ASC")
     plantas = cur.fetchall()
-    jerarquias, pagination = paginar_consulta(cur, """
+    jerarquias, pagination = paginar_gestion(cur, """
         SELECT j.ID_JERARQUIA, j.CARGO, c.DESCRIPCION,
                j.SUPERIOR_JERARQUICO, s.DESCRIPCION,
                j.DEPARTAMENTO, d.DEPARTAMENTO,

@@ -1,6 +1,7 @@
 from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, session, url_for
 from ..extensiones import mysql
-from ..utilidades import paginar_consulta, rol_normalizado
+from ..utilidades import rol_normalizado
+from ..filtrosGestion import paginar_gestion
 
 bp = Blueprint('fleet', __name__)
 
@@ -23,7 +24,7 @@ def crud_empresas():
                 mysql.connection.rollback()
                 flash('No se pudo agregar la empresa. Verifica que el nombre no esté duplicado.', 'danger')
 
-    empresas, pagination = paginar_consulta(cur, "SELECT ID_EMPRESA, NOMBRE FROM Empresas ORDER BY ID_EMPRESA ASC", (), "SELECT COUNT(*) FROM Empresas")
+    empresas, pagination = paginar_gestion(cur, "SELECT ID_EMPRESA, NOMBRE FROM Empresas ORDER BY ID_EMPRESA ASC", (), "SELECT COUNT(*) FROM Empresas")
     cur.close()
     return render_template('Empresas/CRUD_Empresas.html', empresas=empresas, pagination=pagination)
 
@@ -100,7 +101,7 @@ def crud_vehiculos():
                 cur.close()
 
     cur = mysql.connection.cursor()
-    vehiculos, pagination = paginar_consulta(cur, """
+    vehiculos, pagination = paginar_gestion(cur, """
         SELECT ID_VEHICULOS, PLACA, MARCA, MODELO, COLOR, CONDUCTOR_ASIGNADO
         FROM Vehiculos
         ORDER BY ID_VEHICULOS ASC

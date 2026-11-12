@@ -1,6 +1,7 @@
 from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, session, url_for
 from ..extensiones import mysql
-from ..utilidades import paginar_consulta, rol_normalizado
+from ..utilidades import rol_normalizado
+from ..filtrosGestion import paginar_gestion
 
 bp = Blueprint('collaborators', __name__)
 
@@ -57,7 +58,7 @@ def crud_colaboradores():
                 current_app.logger.exception('Error al agregar colaborador')
                 flash('No se pudo agregar el colaborador. Revisa los datos e inténtalo de nuevo.', 'danger')
     # Leer
-    colaboradores, pagination = paginar_consulta(cur, """
+    colaboradores, pagination = paginar_gestion(cur, """
         SELECT col.ID_COLABORADOR, col.NOMBRE,
                d.DEPARTAMENTO, a.AREA, c.DESCRIPCION, u.DESCRIPCION,
                c.DEPARTAMENTO, c.AREA, col.CARGO, col.UBICACION, col.ESTADO,

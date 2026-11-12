@@ -1,6 +1,7 @@
 from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, session, url_for
 from ..extensiones import mysql
-from ..utilidades import paginar_consulta, rol_normalizado
+from ..utilidades import rol_normalizado
+from ..filtrosGestion import paginar_gestion
 
 bp = Blueprint('structure', __name__)
 
@@ -22,7 +23,7 @@ def crud_areas():
         else:
             flash('El campo área es obligatorio.', 'danger')
     # Leer
-    areas, pagination = paginar_consulta(cur, "SELECT ID_AREAS, AREA FROM Areas ORDER BY ID_AREAS ASC", (), "SELECT COUNT(*) FROM Areas")
+    areas, pagination = paginar_gestion(cur, "SELECT ID_AREAS, AREA FROM Areas ORDER BY ID_AREAS ASC", (), "SELECT COUNT(*) FROM Areas")
     cur.close()
     return render_template('Areas/CRUD_Areas.html', areas=areas, pagination=pagination)
 
@@ -79,7 +80,7 @@ def departamentos():
         else:
             flash('El campo departamento es obligatorio.', 'danger')
     # Leer
-    departamentos, pagination = paginar_consulta(cur, "SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM Departamentos ORDER BY ID_DEPARTAMENTOS ASC", (), "SELECT COUNT(*) FROM Departamentos")
+    departamentos, pagination = paginar_gestion(cur, "SELECT ID_DEPARTAMENTOS, DEPARTAMENTO FROM Departamentos ORDER BY ID_DEPARTAMENTOS ASC", (), "SELECT COUNT(*) FROM Departamentos")
     cur.close()
     return render_template('Departamentos/CRUD_Departamentos.html', departamentos=departamentos, pagination=pagination)
 
@@ -132,7 +133,7 @@ def ubicaciones():
             cur.execute("INSERT INTO Ubicaciones (DESCRIPCION, GEOLOCALIZACION, DIRECCION) VALUES (%s, %s, %s)", (descripcion, geolocalizacion, direccion))
             mysql.connection.commit()
     # Leer
-    ubicaciones, pagination = paginar_consulta(cur, "SELECT ID_UBICACIONES, DESCRIPCION, GEOLOCALIZACION, DIRECCION FROM Ubicaciones ORDER BY ID_UBICACIONES ASC", (), "SELECT COUNT(*) FROM Ubicaciones")
+    ubicaciones, pagination = paginar_gestion(cur, "SELECT ID_UBICACIONES, DESCRIPCION, GEOLOCALIZACION, DIRECCION FROM Ubicaciones ORDER BY ID_UBICACIONES ASC", (), "SELECT COUNT(*) FROM Ubicaciones")
     cur.close()
     return render_template('Ubicaciones/CRUD_Ubicaciones.html', ubicaciones=ubicaciones, pagination=pagination)
 
@@ -190,7 +191,7 @@ def crud_cargos():
             mysql.connection.commit()
             flash('Cargo agregado correctamente.', 'success')
     # Leer
-    cargos, pagination = paginar_consulta(cur, """
+    cargos, pagination = paginar_gestion(cur, """
         SELECT c.ID_CARGOS, c.DESCRIPCION, a.AREA, d.DEPARTAMENTO, c.AREA, c.DEPARTAMENTO
         FROM Cargos c
         LEFT JOIN Areas a ON c.AREA = a.ID_AREAS
