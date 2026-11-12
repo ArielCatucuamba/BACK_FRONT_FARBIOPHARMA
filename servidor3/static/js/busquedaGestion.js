@@ -216,8 +216,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 headers: { Accept: 'text/html' },
             });
             if (id !== requestId) return;
+            if (response.status === 401) {
+                window.redirigirALoginGestion();
+                return;
+            }
             if (response.redirected) {
-                window.location.assign(response.url);
+                window.top.location.replace(response.url);
                 return;
             }
             if (!response.ok) throw new Error('No se pudo consultar la lista.');

@@ -106,7 +106,15 @@ def abrir_organigrama_navew():
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     # Compatibilidad con enlaces antiguos; el login central está en NAVEW.
+    if request.headers.get('Sec-Fetch-Dest') == 'iframe':
+        return render_template('sesionRequerida.html', destino_login=current_app.config['NAVEW_LOGIN_URL'])
     return redirect(current_app.config['NAVEW_LOGIN_URL'])
+
+
+@bp.route('/api/sesion', methods=['GET'])
+def estado_sesion():
+    autenticado = 'user_id' in session and rol_normalizado(session.get('user_role')) in {'talentohumano', 'administrador'}
+    return jsonify(autenticado=autenticado), 200 if autenticado else 401
 
 
 @bp.route('/menu')
@@ -125,6 +133,9 @@ def register():
 @bp.route('/logout', methods=['POST'])
 def logout():
     session.clear()
-    return redirect(current_app.config['NAVEW_LOGOUT_URL'])
+    destino = current_app.config['NAVEW_LOGOUT_URL']
+    if request.form.get('destino') == 'directorio':
+        destino += '?destino=directorio'
+    return redirect(destino, code=303)
 
 

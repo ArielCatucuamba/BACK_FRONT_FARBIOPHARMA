@@ -1,0 +1,70 @@
+{% set edicion = modo == 'editar' %}
+{% set prefijo = 'editar' if edicion else 'nuevo' %}
+{% set id_area = 'editarArea' if edicion else 'nuevaArea' %}
+{% set id_ubicacion = 'editarUbicacion' if edicion else 'nuevaUbicacion' %}
+{% set id_area_oculta = 'editarAreaHidden' if edicion else 'nuevaAreaHidden' %}
+{% set id_departamento_oculto = 'editarDepartamentoHidden' if edicion else 'nuevoDepartamentoHidden' %}
+{% if edicion %}<input type="hidden" name="id" id="editarId">{% endif %}
+
+<fieldset class="formulario-seccion">
+    <legend><i class="bi bi-person-vcard" aria-hidden="true"></i> Identificación</legend>
+    <div class="formulario-campos">
+        <div class="formulario-campo formulario-campo--completo">
+            <label for="{{ prefijo }}Nombre" class="form-label">Nombre y apellido</label>
+            <input type="text" class="form-control" name="nombre" id="{{ prefijo }}Nombre" maxlength="100" required placeholder="Ejemplo: Juan Pérez">
+        </div>
+        <div class="formulario-campo">
+            <label for="{{ prefijo }}Cedula" class="form-label">Cédula</label>
+            <input type="text" class="form-control" name="cedula" id="{{ prefijo }}Cedula" inputmode="numeric" minlength="10" maxlength="10" pattern="[0-9]{10}" required title="Ingresa exactamente 10 dígitos" placeholder="10 dígitos" autocomplete="off">
+        </div>
+        <div class="formulario-campo">
+            <label for="{{ prefijo }}Estado" class="form-label">Estado del colaborador</label>
+            <select class="form-select" name="estado" id="{{ prefijo }}Estado" required>
+                {% for estado in estados_colaborador %}<option value="{{ estado }}">{{ estado|capitalize }}</option>{% endfor %}
+            </select>
+        </div>
+    </div>
+</fieldset>
+
+<fieldset class="formulario-seccion">
+    <legend><i class="bi bi-building" aria-hidden="true"></i> Asignación laboral</legend>
+    <div class="formulario-campos">
+        <div class="formulario-campo">
+            <label for="{{ prefijo }}Empresa" class="form-label">Empresa</label>
+            <select class="form-select" name="empresa" id="{{ prefijo }}Empresa" required>
+                <option value="">Seleccione una empresa</option>
+                {% for empresa in empresas %}<option value="{{ empresa[0] }}">{{ empresa[1] }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="formulario-campo">
+            <label for="{{ id_ubicacion }}" class="form-label">Ubicación</label>
+            <select class="form-select" name="ubicacion" id="{{ id_ubicacion }}" required>
+                <option value="">Seleccione una ubicación</option>
+                {% for u in ubicaciones %}<option value="{{ u[0] }}">{{ u[1] }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="formulario-campo formulario-campo--completo">
+            <label for="{{ prefijo }}Cargo" class="form-label">Cargo</label>
+            <input class="form-control" list="listaCargos" name="cargo" id="{{ prefijo }}Cargo" required placeholder="Buscar y seleccionar cargo..." aria-describedby="{{ prefijo }}AyudaCargo">
+            {% if edicion %}<datalist id="listaCargos"></datalist>{% endif %}
+            <p class="formulario-ayuda" id="{{ prefijo }}AyudaCargo">El departamento y el área se completan según el cargo seleccionado.</p>
+        </div>
+        <div class="formulario-campo">
+            <label for="{{ prefijo }}Departamento" class="form-label">Departamento</label>
+            <select class="form-select" id="{{ prefijo }}Departamento" required disabled>
+                <option value="">Según el cargo</option>
+                {% for d in departamentos %}<option value="{{ d[0] }}">{{ d[1] }}</option>{% endfor %}
+            </select>
+            <input type="hidden" name="departamento" id="{{ id_departamento_oculto }}">
+        </div>
+        <div class="formulario-campo">
+            <label for="{{ id_area }}" class="form-label">Área</label>
+            <select class="form-select" id="{{ id_area }}" required disabled>
+                <option value="">Según el cargo</option>
+                {% for a in areas %}<option value="{{ a[0] }}">{{ a[1] }}</option>{% endfor %}
+            </select>
+            <input type="hidden" name="area" id="{{ id_area_oculta }}">
+        </div>
+    </div>
+</fieldset>
+<p class="formulario-nota"><i class="bi bi-info-circle" aria-hidden="true"></i> Solo los colaboradores activos se consideran aprobadores.</p>

@@ -57,6 +57,10 @@
           headers: { Accept: 'application/json' },
           signal: controller.signal
         });
+        if (response.status === 401) {
+          window.redirigirALoginGestion();
+          return;
+        }
         if (!response.ok) throw new Error('No se pudo completar la búsqueda.');
         const items = await response.json();
         if (input.value.trim() !== query) return;

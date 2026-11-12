@@ -1,90 +1,74 @@
-/* Estilo compartido para la cabecera de gestion. */
+/* Cabecera compartida y opciones de la sesion. */
 .management-header {
-        position: relative;
-        z-index: 10;
-        display: flex;
-        min-height: 58px;
-        flex: 0 0 58px;
-        align-items: center;
-        justify-content: flex-end;
-        gap: clamp(.8rem, 2vw, 1.5rem);
-        padding: .6rem clamp(1rem, 3vw, 2rem);
-        background: linear-gradient(105deg, #0d3b4e 0%, #14506b 100%);
-        color: #fff;
-        box-shadow: 0 4px 16px rgba(13, 59, 78, .16);
-        font-family: Inter, "Segoe UI", Arial, sans-serif;
-    }
-    .management-header__identity {
-        display: flex;
-        min-width: 0;
-        align-items: baseline;
-        gap: .55rem;
-    }
-    .management-header__welcome {
-        flex: 0 0 auto;
-        color: rgba(255, 255, 255, .76);
-        font-size: .9rem;
-    }
-    .management-header__name {
-        overflow: hidden;
-        color: #fff;
-        font-size: .95rem;
-        font-weight: 700;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-    .management-header__logout-form { margin: 0; }
-    .management-header__logout {
-        display: inline-flex;
-        min-height: 38px;
-        flex: 0 0 auto;
-        align-items: center;
-        justify-content: center;
-        gap: .5rem;
-        padding: .45rem .8rem;
-        border: 1px solid rgba(255, 255, 255, .28);
-        border-radius: 9px;
-        background: rgba(255, 255, 255, .08);
-        color: #fff;
-        font-size: .88rem;
-        font-weight: 650;
-        text-decoration: none;
-        cursor: pointer;
-        font-family: inherit;
-        transition: background-color .18s ease, border-color .18s ease, transform .18s ease;
-    }
-    .management-header__logout:hover,
-    .management-header__logout:focus-visible {
-        border-color: rgba(255, 255, 255, .55);
-        background: rgba(255, 255, 255, .17);
-        color: #fff;
-        transform: translateY(-1px);
-    }
-    .management-header__logout:focus-visible {
-        outline: 2px solid #b9d9e7;
-        outline-offset: 2px;
-    }
-    .management-header__logout-icon {
-        width: 17px;
-        height: 17px;
-        flex: 0 0 17px;
-    }
-    .management-header--context { display: none; }
-    .workspace.has-context-header .management-header--context { display: flex; }
-
-    @media (max-width: 640px) {
-        .management-header {
-            min-height: 52px;
-            flex-basis: 52px;
-            gap: .65rem;
-            padding: .45rem .8rem;
-        }
-        .management-header__welcome { display: none; }
-        .management-header__name { font-size: .86rem; }
-        .management-header__logout { min-height: 36px; padding: .4rem .65rem; font-size: .82rem; }
-    }
-    @media (max-width: 380px) {
-        .management-header { min-height: 48px; flex-basis: 48px; gap: .45rem; padding-inline: .6rem; }
-        .management-header__name { max-width: 45vw; font-size: .8rem; }
-        .management-header__logout { gap: .35rem; padding-inline: .5rem; font-size: .76rem; }
-    }
+    position: relative;
+    z-index: 20;
+    display: flex;
+    min-height: 58px;
+    flex: 0 0 58px;
+    align-items: center;
+    justify-content: flex-end;
+    padding: .5rem clamp(1rem, 3vw, 2rem);
+    background: linear-gradient(105deg, #0d3b4e 0%, #14506b 100%);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(13, 59, 78, .16);
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+.management-header__user { position: relative; }
+.management-header__trigger {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, .28);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .08);
+    color: #fff;
+    cursor: pointer;
+    list-style: none;
+}
+.management-header__trigger::-webkit-details-marker { display: none; }
+.management-header__trigger svg { width: 25px; height: 25px; }
+.management-header__trigger:hover,
+.management-header__user[open] .management-header__trigger { background: rgba(255, 255, 255, .18); }
+.management-header__trigger:focus-visible,
+.management-header__action:focus-visible { outline: 2px solid #65a4bf; outline-offset: 3px; }
+.management-header__panel {
+    position: absolute;
+    top: calc(100% + .6rem);
+    right: 0;
+    width: min(300px, calc(100vw - 2rem));
+    padding: .4rem;
+    border: 1px solid #dfe9ef;
+    border-radius: 12px;
+    background: #fff;
+    color: #123f56;
+    box-shadow: 0 12px 32px rgba(13, 59, 78, .18);
+}
+.management-header__identity { display: grid; gap: .25rem; margin-bottom: .35rem; padding: .8rem .75rem; border-bottom: 1px solid #e8eff3; }
+.management-header__welcome { color: #587181; font-size: .8rem; }
+.management-header__name { color: #123f56; font-size: .92rem; font-weight: 700; overflow-wrap: anywhere; }
+.management-header__panel form { margin: 0; }
+.management-header__action {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+    align-items: center;
+    gap: .65rem;
+    padding: .65rem .75rem;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #29485d;
+    text-align: left;
+    font: inherit;
+    font-size: .88rem;
+    cursor: pointer;
+}
+.management-header__action svg { width: 19px; height: 19px; flex: 0 0 19px; }
+.management-header__action:hover { background: #f2f6fa; color: #0d3b4e; }
+.management-header--context { display: none; }
+.workspace.has-context-header .management-header--context { display: flex; }
+@media (max-width: 640px) {
+    .management-header { min-height: 52px; flex-basis: 52px; padding: .4rem .8rem; }
+}

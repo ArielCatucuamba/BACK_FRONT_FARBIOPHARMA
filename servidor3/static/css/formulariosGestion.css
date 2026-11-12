@@ -1,0 +1,97 @@
+/* Diseño compartido de los formularios de creación y edición de gestión. */
+.modal.gestion-modal .modal-dialog {
+    display: flex;
+    align-items: center;
+    max-width: min(820px, calc(100vw - 2rem));
+    min-height: calc(100% - 2rem);
+    margin: 1rem auto;
+}
+.modal.gestion-modal--compacto .modal-dialog {
+    max-width: min(560px, calc(100vw - 2rem));
+}
+.modal.gestion-modal .modal-content {
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid #dfe9ef;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 22px 60px rgba(13, 59, 78, .2);
+}
+.modal.gestion-modal .modal-header {
+    align-items: flex-start;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e8eff3;
+    background: linear-gradient(135deg, #f6fafc, #fff);
+}
+.modal.gestion-modal .modal-title {
+    color: #123f56;
+    font-weight: 750;
+    letter-spacing: -.02em;
+}
+.modal.gestion-modal .modal-body {
+    max-height: min(70vh, 690px);
+    overflow-y: auto;
+    padding: 1.25rem 1.5rem;
+}
+.formulario-seccion {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+.formulario-seccion + .formulario-seccion {
+    margin-top: 1.25rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid #e8eff3;
+}
+.formulario-seccion legend {
+    float: none;
+    width: auto;
+    margin-bottom: .85rem;
+    color: #123f56;
+    font-size: .94rem;
+    font-weight: 750;
+}
+.formulario-seccion legend i { margin-right: .4rem; color: #29485d; }
+.formulario-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .95rem 1.25rem; }
+.formulario-campo { min-width: 0; }
+.formulario-campo--completo { grid-column: 1 / -1; }
+.modal.gestion-modal .form-label {
+    margin-bottom: .45rem;
+    color: #29485d;
+    font-size: .88rem;
+    font-weight: 650;
+}
+.modal.gestion-modal .form-control,
+.modal.gestion-modal .form-select {
+    min-height: 46px;
+    border-color: #dce7ed;
+    border-radius: 10px;
+    background-color: #fff;
+    font-family: inherit;
+    transition: border-color .18s ease, box-shadow .18s ease;
+}
+.modal.gestion-modal .form-control:focus,
+.modal.gestion-modal .form-select:focus {
+    border-color: #65a4bf;
+    box-shadow: 0 0 0 .22rem rgba(31, 117, 153, .13);
+}
+.modal.gestion-modal .form-select:disabled { color: #587181; background-color: #f2f6fa; opacity: 1; }
+.formulario-ayuda, .formulario-nota { margin: .4rem 0 0; color: #587181; font-size: .8rem; line-height: 1.5; }
+.formulario-nota { margin-top: 1.15rem; }
+.formulario-nota i { margin-right: .3rem; }
+.modal.gestion-modal .modal-footer {
+    gap: .6rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e8eff3;
+    background: #fbfcfd;
+}
+.modal.gestion-modal .modal-footer .btn { min-width: 112px; min-height: 42px; border-radius: 9px; font-weight: 650; }
+.modal.gestion-modal .modal-footer .btn-primary { border-color: #0d3b4e; background: #0d3b4e; }
+.modal.gestion-modal .modal-footer .btn-primary:hover { border-color: #14506b; background: #14506b; }
+@media (max-width: 575.98px) {
+    .modal.gestion-modal .modal-dialog { max-width: calc(100vw - 1rem); min-height: calc(100% - 1rem); margin: .5rem auto; }
+    .modal.gestion-modal .modal-header, .modal.gestion-modal .modal-body, .modal.gestion-modal .modal-footer { padding: 1rem; }
+    .formulario-campos { grid-template-columns: minmax(0, 1fr); gap: .85rem; }
+    .modal.gestion-modal .modal-footer .btn { flex: 1; min-width: 0; margin: 0; }
+}

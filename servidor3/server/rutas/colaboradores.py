@@ -1,9 +1,39 @@
-from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, session, url_for
+from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, session, url_for, send_file
+from datetime import datetime
+from Colaboradores.exportarColaboradores import generar_excel_colaboradores
+from Colaboradores.validarColaborador import validar_colaborador, ESTADOS_COLABORADOR
 from ..extensiones import mysql
 from ..utilidades import rol_normalizado
 from ..filtrosGestion import paginar_gestion
 
 bp = Blueprint('collaborators', __name__)
+
+
+@bp.route('/crud_colaboradores/descargar-excel', methods=['GET'])
+def descargar_excel_colaboradores():
+    # register_security aplica la sesión y el rol de Talento Humano/Administrador.
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    cursor = None
+    try:
+        cursor = mysql.connection.cursor()
+        archivo = generar_excel_colaboradores(cursor)
+        respuesta = send_file(
+            archivo,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f'colaboradores_{datetime.now():%Y%m%d_%H%M%S}.xlsx',
+        )
+        respuesta.headers['Cache-Control'] = 'no-store, private'
+        respuesta.headers['X-Content-Type-Options'] = 'nosniff'
+        return respuesta
+    except Exception:
+        current_app.logger.exception('No se pudo exportar el padrón de colaboradores')
+        flash('No se pudo generar el Excel. Inténtalo nuevamente.', 'danger')
+        return redirect(url_for('collaborators.crud_colaboradores'))
+    finally:
+        if cursor is not None:
+            cursor.close()
 
 @bp.route('/crud_colaboradores', methods=['GET', 'POST'])
 def crud_colaboradores():
@@ -17,52 +47,37 @@ def crud_colaboradores():
     departamentos = cur.fetchall()
     cur.execute("SELECT ID_UBICACIONES, DESCRIPCION FROM Ubicaciones ORDER BY ID_UBICACIONES ASC")
     ubicaciones = cur.fetchall()
+    cur.execute("SELECT ID_EMPRESA, NOMBRE FROM Empresas ORDER BY NOMBRE ASC")
+    empresas = cur.fetchall()
     # Crear
     if request.method == 'POST':
-        nombre = (request.form.get('nombre') or '').strip()
-        cargo = (request.form.get('cargo') or '').strip()
-        ubicacion = (request.form.get('ubicacion') or '').strip()
-        estado = (request.form.get('estado') or 'ACTIVO').strip().upper()
-        if not all([nombre, cargo, ubicacion]):
-            flash('Todos los campos son obligatorios.', 'danger')
-        elif estado not in ('ACTIVO', 'AUSENTE'):
-            flash('El estado del colaborador no es válido.', 'danger')
-        else:
-            try:
-                if not cargo.isdigit():
-                    cur.execute("SELECT ID_CARGOS FROM Cargos WHERE DESCRIPCION = %s", (cargo,))
-                    cargo_row = cur.fetchone()
-                    cargo = str(cargo_row[0]) if cargo_row else ''
-                if not cargo.isdigit():
-                    raise ValueError('El cargo seleccionado no es válido.')
-
-                cur.execute("SELECT AREA, DEPARTAMENTO FROM Cargos WHERE ID_CARGOS = %s", (cargo,))
-                cargo_contexto = cur.fetchone()
-                if not cargo_contexto:
-                    raise ValueError('El cargo seleccionado no existe.')
-
-                area_form = (request.form.get('area') or '').strip()
-                departamento_form = (request.form.get('departamento') or '').strip()
-                if ((area_form and area_form.isdigit() and int(area_form) != cargo_contexto[0]) or
-                        (departamento_form and departamento_form.isdigit() and int(departamento_form) != cargo_contexto[1])):
-                    raise ValueError('El área y departamento deben corresponder al cargo seleccionado.')
-
-                cur.execute(
-                    "INSERT INTO Colaboradores (NOMBRE, ESTADO, CARGO, UBICACION) VALUES (%s, %s, %s, %s)",
-                    (nombre, estado, int(cargo), int(ubicacion))
-                )
-                mysql.connection.commit()
-                flash('Colaborador agregado exitosamente.', 'success')
-            except Exception as e:
-                mysql.connection.rollback()
+        try:
+            datos = validar_colaborador(request.form, cur)
+            cur.execute(
+                "INSERT INTO Colaboradores (CEDULA, NOMBRE, EMPRESA, ESTADO, CARGO, UBICACION) VALUES (%s, %s, %s, %s, %s, %s)",
+                tuple(datos[campo] for campo in ('cedula', 'nombre', 'empresa', 'estado', 'cargo', 'ubicacion')),
+            )
+            mysql.connection.commit()
+            flash('Colaborador agregado exitosamente.', 'success')
+        except ValueError as error:
+            mysql.connection.rollback()
+            flash(str(error), 'danger')
+        except Exception as error:
+            mysql.connection.rollback()
+            if getattr(error, 'args', ()) and error.args[0] == 1062:
+                flash('La cédula ya está registrada en otro colaborador.', 'danger')
+            else:
                 current_app.logger.exception('Error al agregar colaborador')
                 flash('No se pudo agregar el colaborador. Revisa los datos e inténtalo de nuevo.', 'danger')
+        finally:
+            cur.close()
+        return redirect(url_for('collaborators.crud_colaboradores'))
     # Leer
     colaboradores, pagination = paginar_gestion(cur, """
         SELECT col.ID_COLABORADOR, col.NOMBRE,
                d.DEPARTAMENTO, a.AREA, c.DESCRIPCION, u.DESCRIPCION,
                c.DEPARTAMENTO, c.AREA, col.CARGO, col.UBICACION, col.ESTADO,
-               col.CEDULA, empresa.NOMBRE, correo.CORREO
+               col.CEDULA, empresa.NOMBRE, correo.CORREO, col.EMPRESA
         FROM Colaboradores col
         LEFT JOIN Cargos c ON col.CARGO = c.ID_CARGOS
         LEFT JOIN Areas a ON c.AREA = a.ID_AREAS
@@ -73,77 +88,38 @@ def crud_colaboradores():
         ORDER BY col.ID_COLABORADOR ASC
     """, (), "SELECT COUNT(*) FROM Colaboradores")
     cur.close()
-    return render_template('Colaboradores/CRUD_Colaboradores.html', colaboradores=colaboradores, areas=areas, departamentos=departamentos, ubicaciones=ubicaciones, pagination=pagination)
+    return render_template('Colaboradores/CRUD_Colaboradores.html', colaboradores=colaboradores, areas=areas, departamentos=departamentos, ubicaciones=ubicaciones, empresas=empresas, estados_colaborador=ESTADOS_COLABORADOR, pagination=pagination)
 
 
 @bp.route('/crud_colaboradores/editar/<int:id>', methods=['POST'])
 def editar_colaborador(id):
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    nombre = request.form.get('nombre')
-    departamento = request.form.get('departamento')
-    area = request.form.get('area')
-    cargo = request.form.get('cargo')
-    ubicacion = request.form.get('ubicacion')
-    estado = (request.form.get('estado') or '').strip().upper()
-
-    # Validaciones básicas
-    if not all([nombre, cargo, ubicacion, estado]):
-        flash('Todos los campos son obligatorios.', 'danger')
-        return redirect(url_for('collaborators.crud_colaboradores'))
-    if estado not in ('ACTIVO', 'AUSENTE'):
-        flash('El estado del colaborador no es válido.', 'danger')
-        return redirect(url_for('collaborators.crud_colaboradores'))
-    # Validar que el nombre no sea solo números
-    if nombre.isdigit():
-        flash('El nombre del colaborador no puede ser solo números.', 'danger')
-        return redirect(url_for('collaborators.crud_colaboradores'))
-
-    # Si cargo no es un número (ID), buscar el ID por nombre
-    if not cargo.isdigit():
-        cur = mysql.connection.cursor()
-        cur.execute("SELECT ID_CARGOS FROM Cargos WHERE DESCRIPCION = %s", (cargo,))
-        cargo_row = cur.fetchone()
-        if cargo_row:
-            cargo = str(cargo_row[0])
-        else:
-            cur.close()
-            flash('El cargo seleccionado no es válido.', 'danger')
-            return redirect(url_for('collaborators.crud_colaboradores'))
-        cur.close()
-
     cur = mysql.connection.cursor()
     try:
-        cur.execute("SELECT AREA, DEPARTAMENTO FROM Cargos WHERE ID_CARGOS = %s", (int(cargo),))
-        cargo_contexto = cur.fetchone()
-        if not cargo_contexto:
-            raise ValueError('El cargo seleccionado no existe.')
-        area_form = (request.form.get('area') or '').strip()
-        departamento_form = (request.form.get('departamento') or '').strip()
-        if ((area_form and area_form.isdigit() and int(area_form) != cargo_contexto[0]) or
-                (departamento_form and departamento_form.isdigit() and int(departamento_form) != cargo_contexto[1])):
-            raise ValueError('El área y departamento deben corresponder al cargo seleccionado.')
-
-        # Obtener el nombre anterior del colaborador
-        cur.execute("SELECT NOMBRE FROM Colaboradores WHERE ID_COLABORADOR = %s", (id,))
-        old_row = cur.fetchone()
-        old_nombre = old_row[0] if old_row else None
-        # Si el nombre cambió, actualizar en cascada en las tablas relacionadas
-        if old_nombre and old_nombre != nombre:
-            # Ya no es necesario actualizar NOMBRE en tablas relacionadas, solo en colaboradores
-            pass
-        # Actualizar colaborador
+        cur.execute('SELECT ID_COLABORADOR FROM Colaboradores WHERE ID_COLABORADOR = %s FOR UPDATE', (id,))
+        if not cur.fetchone():
+            raise ValueError('El colaborador ya no existe.')
+        datos = validar_colaborador(request.form, cur, colaborador_id=id)
         cur.execute(
-            "UPDATE Colaboradores SET NOMBRE = %s, ESTADO = %s, CARGO = %s, UBICACION = %s WHERE ID_COLABORADOR = %s",
-            (nombre, estado, int(cargo), int(ubicacion), id)
+            "UPDATE Colaboradores SET CEDULA = %s, NOMBRE = %s, EMPRESA = %s, ESTADO = %s, CARGO = %s, UBICACION = %s WHERE ID_COLABORADOR = %s",
+            tuple(datos[campo] for campo in ('cedula', 'nombre', 'empresa', 'estado', 'cargo', 'ubicacion')) + (id,),
         )
+        # La FK de usuarios.cedula usa ON UPDATE CASCADE en la base compartida.
         mysql.connection.commit()
         flash('Colaborador editado correctamente.', 'success')
-    except Exception as e:
+    except ValueError as error:
         mysql.connection.rollback()
-        current_app.logger.exception('Error al editar colaborador')
-        flash('No se pudo editar el colaborador. Revisa los datos e inténtalo de nuevo.', 'danger')
-    cur.close()
+        flash(str(error), 'danger')
+    except Exception as error:
+        mysql.connection.rollback()
+        if getattr(error, 'args', ()) and error.args[0] == 1062:
+            flash('La cédula ya está registrada en otro colaborador.', 'danger')
+        else:
+            current_app.logger.exception('Error al editar colaborador')
+            flash('No se pudo editar el colaborador. Revisa los datos e inténtalo de nuevo.', 'danger')
+    finally:
+        cur.close()
     return redirect(url_for('collaborators.crud_colaboradores'))
 
 

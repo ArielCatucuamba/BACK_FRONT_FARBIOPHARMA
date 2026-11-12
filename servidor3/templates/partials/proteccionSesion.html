@@ -1,0 +1,2 @@
+<style>html[data-sesion-pendiente] body { visibility: hidden; pointer-events: none; }</style>
+<script src="{{ url_for('static', filename='js/proteccionSesion.js', v='1') }}" data-sesion-url="{{ url_for('auth.estado_sesion') }}" data-login-url="{{ config.NAVEW_LOGIN_URL }}"></script>
